@@ -59,22 +59,22 @@ if __name__ == '__main__':
     # number of spectral expansions
     Nv = 10
     # Velocity scaling of electron and ion
-    alpha_e1 = np.sqrt(2)
-    alpha_e2 = np.sqrt(1 / 2)
+    alpha_e1 = 0.5
+    alpha_e2 = 0.5
     alpha_i = np.sqrt(2 / 1863)
     # perturbation magnitude
-    epsilon = 0.03
+    epsilon = 1e-2
     # x grid is from 0 to L
     L = 2 * np.pi
     # final time
-    T = 20.
+    T = 60.
     # time stepping
-    dt = 1e-3
+    dt = 0.1
     # time vector
     t_vec = np.linspace(0, T, int(T / dt) + 1)
     # velocity scaling
-    u_e1 = -0.5
-    u_e2 = 4.5
+    u_e1 = -1
+    u_e2 = 1
     u_i = 0
     # mass normalized
     m_e1 = 1
@@ -85,8 +85,8 @@ if __name__ == '__main__':
     q_e2 = -1
     q_i = 1
     # scaling of bulk and bump
-    delta_e1 = 9/10
-    delta_e2 = 1/10
+    delta_e1 = 0.5
+    delta_e2 = 0.5
 
     # x direction
     x = np.linspace(0, L, int(1e5)+1)
@@ -120,5 +120,5 @@ if __name__ == '__main__':
                                               r_tol=1e-10, a_tol=1e-15, max_iter=100)
 
     # save results
-    np.save("data/SW_sqrt/bump_on_tail/poisson/sol_midpoint_u_10", sol_midpoint_u)
-    np.save("data/SW_sqrt/bump_on_tail/poisson/sol_midpoint_t_10", t_vec)
+    np.save("data/SW_sqrt/two_stream/poisson/sol_midpoint_u_10", sol_midpoint_u)
+    np.save("data/SW_sqrt/two_stream/poisson/sol_midpoint_t_10", t_vec)

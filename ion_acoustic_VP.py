@@ -1,6 +1,6 @@
 from implicit_midpoint import implicit_midpoint_solver
 import numpy as np
-from operators import RHS, solve_poisson_equation
+from operators import RHS, solve_poisson_equation, ampere_equation_RHS
 
 
 def dydt(y, t):
@@ -23,6 +23,7 @@ def dydt(y, t):
                                L=L,
                                u_e=u_e,
                                u_i=u_i)
+
 
     for jj in range(Nv):
         dydt_[jj * Nx_total: (jj + 1) * Nx_total] = RHS(state=state_e,
@@ -52,6 +53,7 @@ def dydt(y, t):
 
         dydt_[Nv * Nx_total + jj * Nx_total: Nv * Nx_total + (jj + 1) * Nx_total][:Nx] = np.flip(np.conjugate(dydt_[Nv * Nx_total + jj * Nx_total: Nv * Nx_total + (jj + 1) * Nx_total][Nx+1:]))
 
+
     print(t)
     return dydt_
 
@@ -63,7 +65,7 @@ if __name__ == '__main__':
     # number of spectral expansions
     Nv = 10
     # epsilon displacement in initial electron distribution
-    epsilon = 1e-3
+    epsilon = 1e-4
     # velocity scaling of electron and ion
     alpha_e = np.sqrt(2)
     alpha_i = np.sqrt(2 / 50)
@@ -72,9 +74,9 @@ if __name__ == '__main__':
     # spacial spacing dx = x[i+1] - x[i]
     dx = L / (Nx - 1)
     # time stepping
-    dt = 1e-3
+    dt = 1e-1
     # final time (non-dimensional)
-    T = 10.
+    T = 20.
     t_vec = np.linspace(0, T, int(T / dt) + 1)
     # velocity scaling
     u_e = 2
@@ -111,9 +113,9 @@ if __name__ == '__main__':
 
     # set up implicit midpoint
     sol_midpoint_u = implicit_midpoint_solver(t_vec=t_vec, y0=y0, rhs=dydt,
-                                              nonlinear_solver_type="newton_krylov",
-                                              r_tol=1e-10, a_tol=1e-15, max_iter=100)
+                                              nonlinear_solver_type="newton",
+                                              r_tol=1e-16, a_tol=1e-16, max_iter=100)
 
     # save results
-    np.save("data/SW_sqrt/ion_acoustic/poisson/sol_midpoint_u_101", sol_midpoint_u)
-    np.save("data/SW_sqrt/ion_acoustic/poisson/sol_midpoint_t_101", t_vec)
+    np.save("data/SW_sqrt/ion_acoustic/poisson/sol_midpoint_u_10_newton", sol_midpoint_u)
+    np.save("data/SW_sqrt/ion_acoustic/poisson/sol_midpoint_t_10_newton", t_vec)

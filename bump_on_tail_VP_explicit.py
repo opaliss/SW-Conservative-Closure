@@ -65,11 +65,11 @@ if __name__ == '__main__':
     # perturbation magnitude
     epsilon = 0.03
     # x grid is from 0 to L
-    L = 2 * np.pi
+    L = 20 * np.pi / 3
     # final time
-    T = 20.
+    T = 60.
     # time stepping
-    dt = 1e-3
+    dt = 1e-2
     # time vector
     t_vec = np.linspace(0, T, int(T / dt) + 1)
     # velocity scaling
@@ -97,10 +97,10 @@ if __name__ == '__main__':
 
     # project the electron species onto fourier space
     for ii, kk in enumerate(range(-Nx, Nx + 1)):
-        C_0e1[ii] = np.trapz(y=np.sqrt(delta_e1 * (1 + epsilon * np.cos(x)) / alpha_e1) * np.exp(-2 * np.pi * 1j * kk * x / L),
+        C_0e1[ii] = np.trapz(y=np.sqrt(delta_e1 * (1 + epsilon * np.cos(0.3 * x)) / alpha_e1) * np.exp(-2 * np.pi * 1j * kk * x / L),
                              x=x,
                              dx=x[1] - x[0]) / L
-        C_0e2[ii] = np.trapz(y=np.sqrt(delta_e2 * (1 + epsilon * np.cos(x)) / alpha_e2) * np.exp(-2 * np.pi * 1j * kk * x / L),
+        C_0e2[ii] = np.trapz(y=np.sqrt(delta_e2 * (1 + epsilon * np.cos(0.3 * x)) / alpha_e2) * np.exp(-2 * np.pi * 1j * kk * x / L),
                              x=x,
                              dx=x[1] - x[0]) / L
 
@@ -117,7 +117,7 @@ if __name__ == '__main__':
 
     # set up implicit midpoint
     sol_midpoint_u = implicit_midpoint_solver(t_vec=t_vec, y0=y0, rhs=dydt, nonlinear_solver_type="newton_krylov",
-                                              r_tol=1e-10, a_tol=1e-15, max_iter=100)
+                                              r_tol=1e-12, a_tol=1e-16, max_iter=100)
 
     # save results
     np.save("data/SW_sqrt/bump_on_tail/poisson/sol_midpoint_u_10", sol_midpoint_u)

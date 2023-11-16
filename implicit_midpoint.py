@@ -79,7 +79,8 @@ def implicit_midpoint_solver(t_vec, y0, rhs, nonlinear_solver_type="anderson", r
 
         elif nonlinear_solver_type == "newton_krylov":
             y_sol[:, tt] = scipy.optimize.newton_krylov(F=lambda y: implicit_midpoint_formulation(y_new=y,
-                                                                                                  y_old=y_sol[:, tt - 1],
+                                                                                                  y_old=y_sol[:,
+                                                                                                        tt - 1],
                                                                                                   rhs=rhs,
                                                                                                   dt=dt[tt - 1],
                                                                                                   t_old=t_vec[tt - 1]),
