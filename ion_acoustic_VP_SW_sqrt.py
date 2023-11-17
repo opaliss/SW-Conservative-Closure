@@ -22,7 +22,7 @@ def dydt(y, t):
                                Nx=Nx,
                                L=L,
                                u_e=u_e,
-                               u_i=u_i)
+                               u_i=u_i, Nv=Nv)
 
 
     for jj in range(Nv):

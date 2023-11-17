@@ -28,7 +28,7 @@ def dydt(y, t):
                                           L=L,
                                           u_e1=u_e1,
                                           u_e2=u_e2,
-                                          u_i=u_i)
+                                          u_i=u_i, Nv=Nv)
 
     for jj in range(Nv):
         dydt_[jj * (2 * Nx + 1): (jj + 1) * (2 * Nx + 1)] = RHS(state=state_e1, n=jj, Nv=Nv,
@@ -59,22 +59,22 @@ if __name__ == '__main__':
     # number of spectral expansions
     Nv = 10
     # Velocity scaling of electron and ion
-    alpha_e1 = np.sqrt(2)
-    alpha_e2 = np.sqrt(1 / 2)
+    alpha_e1 = 0.5
+    alpha_e2 = 0.5
     alpha_i = np.sqrt(2 / 1863)
     # perturbation magnitude
-    epsilon = 0.03
+    epsilon = 1e-2
     # x grid is from 0 to L
-    L = 20 * np.pi / 3
+    L = 2 * np.pi
     # final time
     T = 60.
     # time stepping
-    dt = 1e-2
+    dt = 0.1
     # time vector
     t_vec = np.linspace(0, T, int(T / dt) + 1)
     # velocity scaling
-    u_e1 = -0.5
-    u_e2 = 4.5
+    u_e1 = -1
+    u_e2 = 1
     u_i = 0
     # mass normalized
     m_e1 = 1
@@ -85,8 +85,8 @@ if __name__ == '__main__':
     q_e2 = -1
     q_i = 1
     # scaling of bulk and bump
-    delta_e1 = 9/10
-    delta_e2 = 1/10
+    delta_e1 = 0.5
+    delta_e2 = 0.5
 
     # x direction
     x = np.linspace(0, L, int(1e5)+1)
@@ -97,10 +97,10 @@ if __name__ == '__main__':
 
     # project the electron species onto fourier space
     for ii, kk in enumerate(range(-Nx, Nx + 1)):
-        C_0e1[ii] = np.trapz(y=np.sqrt(delta_e1 * (1 + epsilon * np.cos(0.3 * x)) / alpha_e1) * np.exp(-2 * np.pi * 1j * kk * x / L),
+        C_0e1[ii] = np.trapz(y=np.sqrt(delta_e1 * (1 + epsilon * np.cos(x)) / alpha_e1) * np.exp(-2 * np.pi * 1j * kk * x / L),
                              x=x,
                              dx=x[1] - x[0]) / L
-        C_0e2[ii] = np.trapz(y=np.sqrt(delta_e2 * (1 + epsilon * np.cos(0.3 * x)) / alpha_e2) * np.exp(-2 * np.pi * 1j * kk * x / L),
+        C_0e2[ii] = np.trapz(y=np.sqrt(delta_e2 * (1 + epsilon * np.cos(x)) / alpha_e2) * np.exp(-2 * np.pi * 1j * kk * x / L),
                              x=x,
                              dx=x[1] - x[0]) / L
 
@@ -117,8 +117,8 @@ if __name__ == '__main__':
 
     # set up implicit midpoint
     sol_midpoint_u = implicit_midpoint_solver(t_vec=t_vec, y0=y0, rhs=dydt, nonlinear_solver_type="newton_krylov",
-                                              r_tol=1e-12, a_tol=1e-16, max_iter=100)
+                                              r_tol=1e-10, a_tol=1e-15, max_iter=100)
 
     # save results
-    np.save("data/SW_sqrt/bump_on_tail/poisson/sol_midpoint_u_10", sol_midpoint_u)
-    np.save("data/SW_sqrt/bump_on_tail/poisson/sol_midpoint_t_10", t_vec)
+    np.save("data/SW_sqrt/two_stream/poisson/sol_midpoint_u_10", sol_midpoint_u)
+    np.save("data/SW_sqrt/two_stream/poisson/sol_midpoint_t_10", t_vec)
