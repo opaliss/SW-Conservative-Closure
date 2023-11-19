@@ -13,7 +13,6 @@ def dydt(y, t):
     state_i = np.zeros((Nv, Nx_total), dtype="complex128")
     state_i[0, Nx] = np.sqrt(1 / alpha_i)
 
-
     for jj in range(Nv):
         state_e1[jj, :] = y[jj * Nx_total: (jj + 1) * Nx_total]
         state_e2[jj, :] = y[Nv * Nx_total + jj * Nx_total: Nv * Nx_total + (jj + 1) * Nx_total]
@@ -44,7 +43,8 @@ def dydt(y, t):
                                                                                                         q_s=q_e2,
                                                                                                         Nx=Nx, m_s=m_e2,
                                                                                                         E=E,
-                                                                                                        u_s=u_e2, L=L, solver="SWSR")
+                                                                                                        u_s=u_e2, L=L,
+                                                                                                        solver="SWSR")
         # enforce that the coefficients live in the reals
         dydt_[Nv * Nx_total + jj * Nx_total: Nv * Nx_total + (jj + 1) * Nx_total][:Nx] = \
             np.flip(np.conjugate(dydt_[Nv * Nx_total + jj * Nx_total: Nv * Nx_total + (jj + 1) * Nx_total][Nx+1:]))
@@ -55,12 +55,12 @@ def dydt(y, t):
 if __name__ == '__main__':
     # set up configuration parameters
     # number of mesh points in x
-    Nx = 20
+    Nx = 30
     # number of spectral expansions
-    Nv = 10
+    Nv = 80
     # Velocity scaling of electron and ion
     alpha_e1 = np.sqrt(2)
-    alpha_e2 = np.sqrt(1 / 2)
+    alpha_e2 = 1
     alpha_i = np.sqrt(2 / 1863)
     # perturbation magnitude
     epsilon = 0.03
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     # final time
     T = 20.
     # time stepping
-    dt = 1e-1
+    dt = 1e-2
     # time vector
     t_vec = np.linspace(0, T, int(T / dt) + 1)
     # velocity scaling
@@ -120,5 +120,5 @@ if __name__ == '__main__':
                                               r_tol=1e-10, a_tol=1e-15, max_iter=100)
 
     # save results
-    np.save("data/SW_sqrt/bump_on_tail/poisson/sol_midpoint_u_10", sol_midpoint_u)
-    np.save("data/SW_sqrt/bump_on_tail/poisson/sol_midpoint_t_10", t_vec)
+    np.save("data/SW_sqrt/bump_on_tail/poisson/sol_midpoint_u_80", sol_midpoint_u)
+    np.save("data/SW_sqrt/bump_on_tail/poisson/sol_midpoint_t_80", t_vec)

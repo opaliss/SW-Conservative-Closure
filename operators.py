@@ -26,16 +26,16 @@ def integral_I0(n, Nv):
     """
     if n < 0:
         return 0
-    elif n > Nv - 1:
-        return 0
+    # elif n > Nv - 1:
+    #     return 0
     elif n == 0:
         return np.sqrt(2) * (np.pi ** (1 / 4))
     elif n % 2 == 1:
         return 0
     else:
-        term = np.zeros(Nv)
+        term = np.zeros(Nv+3)
         term[0] = np.sqrt(2) * (np.pi ** (1 / 4))
-        for m in range(2, Nv):
+        for m in range(2, Nv+3):
             term[m] = np.sqrt((m - 1) / m) * term[m - 2]
         return term[n]
 
@@ -51,8 +51,10 @@ def integral_I1(n, u_s, alpha_s, Nv):
     if n % 2 == 0:
         return u_s * integral_I0(n=n, Nv=Nv)
     else:
-        return alpha_s * np.sqrt(n / 2) * integral_I0(n=n - 1, Nv=Nv) \
-               + alpha_s * np.sqrt((n + 1) / 2) * integral_I0(n=n + 1, Nv=Nv)
+        return alpha_s * np.sqrt(2) * np.sqrt(n) * integral_I0(n=n - 1, Nv=Nv)
+        # todo: match Kormann et al. for J_{n} value
+        # return alpha_s * np.sqrt(n / 2) * integral_I0(n=n - 1, Nv=Nv) \
+        #      + alpha_s * np.sqrt((n + 1) / 2) * integral_I0(n=n + 1, Nv=Nv)
 
 
 def integral_I2(n, u_s, alpha_s, Nv):
@@ -72,6 +74,14 @@ def integral_I2(n, u_s, alpha_s, Nv):
 
 
 def fft_(coeff, Nx, x, L):
+    """evaluate the fourier expansion given the fourier coefficients.
+
+    :param coeff: vector of all fourier coefficients
+    :param Nx: number of fourier modes (total 2Nx+1)
+    :param x: spatial domain
+    :param L: length of spatial domain
+    :return: fourier expansion
+    """
     sol = np.zeros(2 * Nx + 1, dtype="complex128")
     for ii, kk in enumerate(range(-Nx, Nx + 1)):
         sol += coeff[ii] * np.exp(1j * kk * x * 2 * np.pi / L)
@@ -225,6 +235,10 @@ def linear_2_SWSR(state_e, state_i, alpha_e, alpha_i, q_e=-1, q_i=1):
 
 def linear_2_SW(state_e, state_i, alpha_e, alpha_i, Nx, Nv, q_e=-1, q_i=1):
     """
+    :param q_i: ion charge (normalized)
+    :param q_e: electron charge (normalized)
+    :param Nv: number of spectral Hermite modes
+    :param Nx: number of spectral fourier modes (total 2Nx+1)
     :param state_e: a matrix of electron states at time t=t*
     :param state_i: a matrix of ion states at time t=t*
     :param alpha_e: the velocity scaling of electrons
@@ -323,10 +337,11 @@ def RHS(state, n, q_s, m_s, L, u_s, alpha_s, E, Nv, Nx, solver="SW", nu=10):
     J = J_matrix(Nx=Nx, L=L)
 
     if solver == "AW":
-        return -J @ (term1 + term2 + term3) - nonlinear_AW(state=state, n=n, E=E, q_s=q_s, m_s=m_s, alpha_s=alpha_s)
+        return -J @ (term1 + term2 + term3) - nonlinear_AW(state=state, n=n, E=E, q_s=q_s, m_s=m_s, alpha_s=alpha_s) \
+               + collisions(state=state, nu=nu, Nv=Nv, n=n)
     else:
         return -J @ (term1 + term2 + term3) - nonlinear_SW(state=state, n=n, E=E, Nv=Nv, q_s=q_s, m_s=m_s,
-                                                           alpha_s=alpha_s) + collisions(state=state, nu=nu, Nv=Nv, n=n)
+                                                           alpha_s=alpha_s)
 
 
 def solve_poisson_equation_two_stream(state_e1, state_e2, state_i, alpha_e1, alpha_e2, alpha_i, Nx, Nv, L, u_e1, u_e2,
@@ -360,7 +375,7 @@ def solve_poisson_equation_two_stream(state_e1, state_e2, state_i, alpha_e1, alp
             else:
                 E[ii] = L / (2 * np.pi * kk * 1j) * rhs[ii]
 
-    print("charge neutrality = ", rhs[Nx].real)
+    #print("charge neutrality = ", rhs[Nx].real)
     return E
 
 
@@ -388,7 +403,7 @@ def solve_poisson_equation(state_e, state_i, alpha_e, alpha_i, Nx, Nv, L, solver
                 E[ii] = np.conjugate(E[Nx - kk])
             else:
                 E[ii] = L / (2 * np.pi * kk * 1j) * rhs[ii]
-    print("charge neutrality = ", rhs[Nx].real)
+    #print("charge neutrality = ", rhs[Nx].real)
     return E
 
 

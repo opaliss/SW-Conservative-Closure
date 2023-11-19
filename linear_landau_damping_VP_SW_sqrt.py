@@ -1,13 +1,15 @@
 from implicit_midpoint import implicit_midpoint_solver
 import numpy as np
-from operators import RHS, solve_poisson_equation
+from operators import RHS, solve_poisson_equation, J_matrix
 
 
 def dydt(y, t):
     dydt_ = np.zeros(len(y), dtype="complex128")
 
-    state_e = np.zeros((Nv, 2 * Nx + 1), dtype="complex128")
-    state_i = np.zeros((Nv, 2 * Nx + 1), dtype="complex128")
+    Nx_total = 2*Nx + 1
+    state_e = np.zeros((Nv, Nx_total), dtype="complex128")
+    state_i = np.zeros((Nv, Nx_total), dtype="complex128")
+    # fix ions
     state_i[0, Nx] = np.sqrt(1 / alpha_i)
 
     for jj in range(Nv):
@@ -18,15 +20,26 @@ def dydt(y, t):
                                alpha_e=alpha_e,
                                alpha_i=alpha_i,
                                Nx=Nx,
-                               L=L)
+                               L=L, Nv=Nv, solver="SWSR")
 
     for jj in range(Nv):
         dydt_[jj * (2 * Nx + 1): (jj + 1) * (2 * Nx + 1)] = RHS(state=state_e, n=jj, Nv=Nv,
                                                                 alpha_s=alpha_e, q_s=q_e,
                                                                 Nx=Nx, m_s=m_e, E=E,
-                                                                u_s=u_e, L=L)
+                                                                u_s=u_e, L=L, solver="SWSR")
 
-    print(t)
+        dydt_[jj * Nx_total: (jj + 1) * Nx_total][:Nx] = np.flip(
+            np.conjugate(dydt_[jj * Nx_total: (jj + 1) * Nx_total][Nx + 1:]))
+
+
+    D = J_matrix(Nx=Nx, L=L)
+    dydt_[-1] = -L * (alpha_e ** 2) * np.sqrt((Nv - 1) / 2) * (Nv / 2) * (
+                -m_e * (alpha_e ** 2) * np.flip(np.conjugate(state_e[-2, :])).T @ D @ state_e[-1, :] + q_e * np.flip(np.conjugate(E)).T @ (
+                    state_e[-2, :] * state_e[-1, :])) \
+                -L * (alpha_i ** 2) * np.sqrt((Nv - 1) / 2) * (Nv / 2) * (
+                            -m_i * (alpha_i ** 2) * np.flip(np.conjugate(state_i[-2, :])).T @ D @ state_i[-1, :] + q_i * np.flip(np.conjugate(E)).T @ (
+                                state_i[-2, :] * state_i[-1, :]))
+
     return dydt_
 
 
@@ -59,7 +72,7 @@ if __name__ == '__main__':
     q_i = 1
 
     # x direction
-    x = np.linspace(0, L, int(1e4))
+    x = np.linspace(0, L, int(1e5) + 1)
 
     # initial condition of the first expansion coefficient
     C_0e = np.zeros(2 * Nx + 1, dtype="complex128")
@@ -77,6 +90,7 @@ if __name__ == '__main__':
 
     # initial condition of the semi-discretized ODE
     y0 = states_e.flatten("C")
+    y0 = np.append(y0, 0)
 
     # set up implicit midpoint
     sol_midpoint_u = implicit_midpoint_solver(t_vec=t_vec, y0=y0, rhs=dydt, nonlinear_solver_type="newton_krylov",

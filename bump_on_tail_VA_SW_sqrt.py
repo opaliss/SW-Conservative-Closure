@@ -83,7 +83,7 @@ if __name__ == '__main__':
     # time vector
     t_vec = np.linspace(0, T, int(T / dt) + 1)
     # velocity scaling
-    u_e1 = -0.5
+    u_e1 = 0
     u_e2 = 4.5
     u_i = 0
     # mass normalized
