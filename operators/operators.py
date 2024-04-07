@@ -375,7 +375,6 @@ def solve_poisson_equation_two_stream(state_e1, state_e2, state_i, alpha_e1, alp
             else:
                 E[ii] = L / (2 * np.pi * kk * 1j) * rhs[ii]
 
-    #print("charge neutrality = ", rhs[Nx].real)
     return E
 
 

@@ -1,4 +1,4 @@
-from implicit_midpoint import implicit_midpoint_solver
+from operators.implicit_midpoint import implicit_midpoint_solver
 import numpy as np
 from operators import RHS, solve_poisson_equation_two_stream, integral_I0, J_matrix_inv
 

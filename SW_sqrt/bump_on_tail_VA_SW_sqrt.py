@@ -1,4 +1,4 @@
-from implicit_midpoint import implicit_midpoint_solver
+from operators.implicit_midpoint import implicit_midpoint_solver
 import numpy as np
 from operators import RHS, solve_poisson_equation_two_stream, ampere_equation_RHS_two_stream
 
