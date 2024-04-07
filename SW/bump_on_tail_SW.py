@@ -1,6 +1,6 @@
 from operators.implicit_midpoint import implicit_midpoint_solver
 import numpy as np
-from operators import RHS, solve_poisson_equation_two_stream, integral_I0, J_matrix_inv
+from operators.operators import RHS, solve_poisson_equation_two_stream, integral_I0, J_matrix_inv
 
 
 def dydt(y, t):
@@ -25,18 +25,14 @@ def dydt(y, t):
                                           alpha_e2=alpha_e2,
                                           Nx=Nx,
                                           L=L,
-                                          u_e1=u_e1,
-                                          u_e2=u_e2,
-                                          u_i=u_i, Nv=Nv, solver="SW")
+                                          Nv=Nv,
+                                          solver="SW")
 
     for jj in range(Nv):
         dydt_[jj * (2 * Nx + 1): (jj + 1) * (2 * Nx + 1)] = RHS(state=state_e1, n=jj, Nv=Nv,
                                                                 alpha_s=alpha_e1, q_s=q_e1,
                                                                 Nx=Nx, m_s=m_e1, E=E,
                                                                 u_s=u_e1, L=L)
-        # enforce that the coefficients live in the reals
-        dydt_[jj * Nx_total: (jj + 1) * Nx_total][:Nx] = np.flip(
-            np.conjugate(dydt_[jj * Nx_total: (jj + 1) * Nx_total][Nx + 1:]))
 
         dydt_[Nv * (2 * Nx + 1) + jj * (2 * Nx + 1): Nv * (2 * Nx + 1) + (jj + 1) * (2 * Nx + 1)] = RHS(state=state_e2,
                                                                                                         n=jj, Nv=Nv,
@@ -45,46 +41,44 @@ def dydt(y, t):
                                                                                                         Nx=Nx, m_s=m_e2,
                                                                                                         E=E,
                                                                                                         u_s=u_e2, L=L)
-        # enforce that the coefficients live in the reals
-        dydt_[Nv * Nx_total + jj * Nx_total: Nv * Nx_total + (jj + 1) * Nx_total][:Nx] = \
-            np.flip(np.conjugate(dydt_[Nv * Nx_total + jj * Nx_total: Nv * Nx_total + (jj + 1) * Nx_total][Nx + 1:]))
 
         # mass (even)
-        dydt_[-1] = -L * (q_e1 / m_e1) * np.sqrt((Nv - 1) / 2) * integral_I0(n=Nv - 2, Nv=Nv) * np.flip(
+        dydt_[-1] = -L * (q_e1 / m_e1) * np.sqrt((Nv - 1) / 2) * integral_I0(n=Nv - 2) * np.flip(
             np.conjugate(E).T) @ state_e1[-1, :] \
-                    - L * (q_e2 / m_e2) * np.sqrt((Nv - 1) / 2) * integral_I0(n=Nv - 2, Nv=Nv) * np.flip(
+                    - L * (q_e2 / m_e2) * np.sqrt((Nv - 1) / 2) * integral_I0(n=Nv - 2) * np.flip(
             np.conjugate(E).T) @ state_e2[-1, :] \
-                    - L * (q_i / m_i) * np.sqrt((Nv - 1) / 2) * integral_I0(n=Nv - 2, Nv=Nv) * np.flip(
-            np.conjugate(E).T) @ state_i[-1, :]
+                    - L * (q_i / m_i) * np.sqrt((Nv - 1) / 2) * integral_I0(n=Nv - 2) *\
+                    np.flip(np.conjugate(E).T) @ state_i[-1, :]
 
         # momentum (odd)
-        dydt_[-2] = -L * (Nv - 1) * integral_I0(n=Nv - 1, Nv=Nv) * np.flip(np.conjugate(E).T) @ (
+        dydt_[-2] = -L * (Nv - 1) * integral_I0(n=Nv - 1) * np.flip(np.conjugate(E).T) @ (
                     alpha_e1 * q_e1 * state_e1[-1, :] +
                     alpha_e2 * q_e2 * state_e2[-1, :] +
                     alpha_i * q_i * state_i[-1, :])
 
         # momentum (even)
-        dydt_[-3] = -L * np.sqrt((Nv - 1) / 2) * integral_I0(n=Nv - 2, Nv=Nv) * np.flip(np.conjugate(E).T) @ (
+        dydt_[-3] = -L * np.sqrt((Nv - 1) / 2) * integral_I0(n=Nv - 2) * np.flip(np.conjugate(E).T) @ (
                     u_e1 * q_e1 * state_e1[-1, :] +
                     u_e2 * q_e2 * state_e2[-1, :] +
                     u_i * q_i * state_i[-1, :]) \
-                    - (L/2) / m_e1 * integral_I0(n=Nv - 1, Nv=Nv) * np.sqrt((Nv - 1) / 2) * np.flip(np.conjugate(E).T) \
+                    - (L/2) / m_e1 * integral_I0(n=Nv - 1) * np.sqrt((Nv - 1) / 2) * np.flip(np.conjugate(E).T) \
                     @ J_matrix_inv(Nx=Nx, L=L) @ np.convolve(E, state_e1[-1, :], mode="same") \
-                    - (L / 2) / m_e2 * integral_I0(n=Nv - 1, Nv=Nv) * np.sqrt((Nv - 1) / 2) * np.flip(np.conjugate(E).T) \
+                    - (L / 2) / m_e2 * integral_I0(n=Nv - 1) * np.sqrt((Nv - 1) / 2) * np.flip(np.conjugate(E).T) \
                     @ J_matrix_inv(Nx=Nx, L=L) @ np.convolve(E, state_e2[-1, :], mode="same") \
-                    - (L / 2) / m_i * integral_I0(n=Nv - 1, Nv=Nv) * np.sqrt((Nv - 1) / 2) * np.flip(np.conjugate(E).T) \
+                    - (L / 2) / m_i * integral_I0(n=Nv - 1) * np.sqrt((Nv - 1) / 2) * np.flip(np.conjugate(E).T) \
                     @ J_matrix_inv(Nx=Nx, L=L) @ np.convolve(E, state_i[-1, :], mode="same")
 
         # energy (odd)
-        dydt_[-4] = -L * (Nv - 1) * integral_I0(n=Nv - 1, Nv=Nv) * np.flip(np.conjugate(E).T) @ (
+        dydt_[-4] = -L * (Nv - 1) * integral_I0(n=Nv - 1) * np.flip(np.conjugate(E).T) @ (
                     u_e1 * q_e1 * state_e1[-1, :] +
                     u_e2 * q_e2 * state_e2[-1, :] +
                     u_i * q_i * state_i[-1, :])
+
         # energy (even)
-        dydt_[-5] = -L * np.sqrt((Nv - 1) / 2) * integral_I0(n=Nv - 2, Nv=Nv) * np.flip(np.conjugate(E).T) @ (
-                q_e1 * ((2 * Nv - 1) * (alpha_e1 ** 2) + u_e1 ** 2) * state_e1[-1, :]
-                + q_e2 * ((2 * Nv - 1) * (alpha_e2 ** 2) + u_e2 ** 2) * state_e2[-1, :]
-                + q_i * ((2 * Nv - 1) * (alpha_i ** 2) + u_i ** 2) * state_i[-1, :])
+        dydt_[-5] = -L * np.sqrt((Nv - 1) / 2) * integral_I0(n=Nv - 2) * np.flip(np.conjugate(E).T) @ (
+                0.5 * q_e1 * ((2 * Nv - 1) * (alpha_e1 ** 2) + u_e1 ** 2) * state_e1[-1, :]
+                + 0.5 * q_e2 * ((2 * Nv - 1) * (alpha_e2 ** 2) + u_e2 ** 2) * state_e2[-1, :]
+                + 0.5 * q_i * ((2 * Nv - 1) * (alpha_i ** 2) + u_i ** 2) * state_i[-1, :])
 
     return dydt_
 
