@@ -52,6 +52,7 @@ def integral_I2(n, u_s, alpha_s):
     else:
         return 2 * u_s * integral_I1(n=n, u_s=u_s, alpha_s=alpha_s)
 
+
 def fft_(coeff, Nx, x, L):
     """evaluate the fourier expansion given the fourier coefficients.
 
@@ -112,7 +113,8 @@ def J_matrix_inv(Nx, L):
     """
     J = np.zeros(((2 * Nx + 1), (2 * Nx + 1)), dtype="complex128")
     for ii, kk in enumerate(range(-Nx, Nx + 1)):
-        J[ii, ii] = L / 2 * np.pi * 1j * kk
+        if kk != 0:
+            J[ii, ii] = L / (2 * np.pi * 1j * kk)
     return J
 
 
@@ -169,34 +171,6 @@ def nonlinear_SW(state, n, E, Nv, q_s, m_s, alpha_s, closure):
                                           - np.sqrt(n / 2) * np.convolve(a=state[n - 1, :], v=E, mode="same"))
 
 
-def density_convolve(state):
-    """ state of all coefficients, dimensions = Nv x (2*Nx+1)
-
-    :param state:
-    :return:
-    """
-    Nv, Nx_total = np.shape(state)
-    y = np.zeros(Nx_total, dtype="complex128")
-    for ii in range(Nv):
-        y += np.convolve(a=state[ii, :], v=state[ii, :], mode="same")
-    return y
-
-
-def linear_2_SWSR(state_e, state_i, alpha_e, alpha_i, q_e=-1, q_i=1):
-    """
-    :param q_i: charge of ions
-    :param q_e: charge of electrons
-    :param state_e: a matrix of electron states at time t=t*
-    :param state_i: a matrix of ion states at time t=t*
-    :param alpha_e: the velocity scaling of electrons
-    :param alpha_i: the velocity scaling of ions
-    :return: L_{2}(x, t=t*)
-    """
-    term1 = alpha_e * density_convolve(state=state_e)
-    term2 = alpha_i * density_convolve(state=state_i)
-    return q_e * term1 + q_i * term2
-
-
 def linear_2_SW(state_e, state_i, alpha_e, alpha_i, Nx, Nv, q_e=-1, q_i=1):
     """
     :param q_i: ion charge (normalized)
@@ -215,25 +189,6 @@ def linear_2_SW(state_e, state_i, alpha_e, alpha_i, Nx, Nv, q_e=-1, q_i=1):
         term1 += alpha_e * state_e[m, :] * integral_I0(n=m)
         term2 += alpha_i * state_i[m, :] * integral_I0(n=m)
     return q_e * term1 + q_i * term2
-
-
-def linear_2_two_stream_SWSR(state_e1, state_e2, state_i, alpha_e1, alpha_e2, alpha_i, q_e1=-1, q_e2=-1, q_i=1):
-    """
-    :param q_i: ion charge
-    :param q_e2: electron 2 charge
-    :param q_e1: electron 1 charge
-    :param state_e1: a matrix of electron coefficients (species 1) at time t=t*
-    :param state_e2: a matrix of electron coefficients (species 2) at time t=t*
-    :param state_i: a matrix of ion states at time t=t*
-    :param alpha_e1: the velocity scaling of electrons (species 1)
-    :param alpha_e2: the velocity scaling of electrons (species 2)
-    :param alpha_i: the velocity scaling of ions
-    :return: L_{2}(x, t=t*).
-    """
-    term1 = alpha_e1 * density_convolve(state=state_e1)
-    term2 = alpha_e2 * density_convolve(state=state_e2)
-    term3 = alpha_i * density_convolve(state=state_i)
-    return q_e1 * term1 + q_e2 * term2 + q_i * term3
 
 
 def linear_2_two_stream_SW(state_e1, state_e2, state_i, alpha_e1, alpha_e2, alpha_i, Nx, Nv, q_e1=-1, q_e2=-1, q_i=1):
@@ -281,10 +236,8 @@ def RHS(state, n, q_s, m_s, L, u_s, alpha_s, E, Nv, Nx, closure):
                                                        closure=closure)
 
 
-def solve_poisson_equation_two_stream(state_e1, state_e2, state_i, alpha_e1, alpha_e2, alpha_i, Nx, Nv, L,
-                                      solver="SW"):
+def solve_poisson_equation_two_stream(state_e1, state_e2, state_i, alpha_e1, alpha_e2, alpha_i, Nx, Nv, L):
     """
-    :param solver: "SW" or "SWSR", default is "SW"
     :param L: spatial length
     :param Nv: number of velocity Hermite modes
     :param state_e1: a matrix of electron coefficients (species 1) at time t=t*
@@ -296,12 +249,10 @@ def solve_poisson_equation_two_stream(state_e1, state_e2, state_i, alpha_e1, alp
     :param Nx: number of spectral terms in space (2*Nx+1) in total
     :return: E(x, t=t*)
     """
-    if solver == "SWSR":
-        rhs = linear_2_two_stream_SWSR(state_e1=state_e1, state_e2=state_e2, state_i=state_i, alpha_e1=alpha_e1,
-                                       alpha_e2=alpha_e2, alpha_i=alpha_i)
-    elif solver == "SW":
-        rhs = linear_2_two_stream_SW(state_e1=state_e1, state_e2=state_e2, state_i=state_i, alpha_e1=alpha_e1,
+    rhs = linear_2_two_stream_SW(state_e1=state_e1, state_e2=state_e2, state_i=state_i, alpha_e1=alpha_e1,
                                      alpha_e2=alpha_e2, alpha_i=alpha_i, Nx=Nx, Nv=Nv)
+
+    #J_matrix_inv(Nx=Nx, L=L) @ rhs
 
     E = np.zeros(2*Nx+1, dtype="complex128")
 
@@ -312,12 +263,11 @@ def solve_poisson_equation_two_stream(state_e1, state_e2, state_i, alpha_e1, alp
             else:
                 E[ii] = L / (2 * np.pi * kk * 1j) * rhs[ii]
 
-    return E
+    return J_matrix_inv(Nx=Nx, L=L) @ rhs
 
 
-def solve_poisson_equation(state_e, state_i, alpha_e, alpha_i, Nx, Nv, L, solver="SWSR"):
+def solve_poisson_equation(state_e, state_i, alpha_e, alpha_i, Nx, Nv, L):
     """
-    :param solver: "SW" or "SWSR"
     :param L: spatial length
     :param Nv: number of velocity Hermite modes
     :param state_e: a matrix of electron coefficients at time t=t*
@@ -327,11 +277,7 @@ def solve_poisson_equation(state_e, state_i, alpha_e, alpha_i, Nx, Nv, L, solver
     :param Nx: number of spectral terms in space (2*Nx+1) in total
     :return: E(x, t=t*)
     """
-    if solver == "SWSR":
-        rhs = linear_2_SWSR(state_e=state_e, state_i=state_i, alpha_e=alpha_e, alpha_i=alpha_i)
-    elif solver == "SW":
-        rhs = linear_2_SW(state_e=state_e, state_i=state_i, alpha_e=alpha_e, alpha_i=alpha_i, Nx=Nx, Nv=Nv)
-
+    rhs = linear_2_SW(state_e=state_e, state_i=state_i, alpha_e=alpha_e, alpha_i=alpha_i, Nx=Nx, Nv=Nv)
     E = np.zeros(2*Nx+1, dtype="complex128")
 
     for ii, kk in enumerate(range(-Nx, Nx + 1)):
