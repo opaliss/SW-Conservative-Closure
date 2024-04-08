@@ -17,9 +17,9 @@ def integral_I0(n):
     elif n % 2 == 1:
         return 0
     else:
-        term = np.zeros(n + 10)
+        term = np.zeros(n+10)
         term[0] = np.sqrt(2) * (np.pi ** (1 / 4))
-        for m in range(2, n + 10):
+        for m in range(2, n+10):
             term[m] = np.sqrt((m - 1) / m) * term[m - 2]
         return term[n]
 
@@ -51,7 +51,6 @@ def integral_I2(n, u_s, alpha_s):
                                  integral_I0(n=n - 2))
     else:
         return 2 * u_s * integral_I1(n=n, u_s=u_s, alpha_s=alpha_s)
-
 
 def fft_(coeff, Nx, x, L):
     """evaluate the fourier expansion given the fourier coefficients.
@@ -117,7 +116,7 @@ def J_matrix_inv(Nx, L):
     return J
 
 
-def linear(state, n, u_s, alpha_s, Nv):
+def linear(state, n, u_s, alpha_s, Nv, closure):
     """
 
     :param state: state of all coefficients, dimensions =  Nv x (2*Nx+1)
@@ -137,7 +136,7 @@ def linear(state, n, u_s, alpha_s, Nv):
     # the last term in the expansion
     elif n == Nv - 1:
         term1 = alpha_s * np.sqrt(n / 2) * state[n - 1, :]
-        term2 = 0 * state[n, :]
+        term2 = alpha_s * np.sqrt((n + 1) / 2) * closure
         term3 = u_s * state[n, :]
         return term1, term2, term3
 
@@ -149,7 +148,7 @@ def linear(state, n, u_s, alpha_s, Nv):
         return term1, term2, term3
 
 
-def nonlinear_SW(state, n, E, Nv, q_s, m_s, alpha_s):
+def nonlinear_SW(state, n, E, Nv, q_s, m_s, alpha_s, closure):
     """
 
     :param state: state of all coefficients, dimensions = Nv x (2*Nx+1)
@@ -163,7 +162,8 @@ def nonlinear_SW(state, n, E, Nv, q_s, m_s, alpha_s):
     if n == 0:
         return (q_s / (m_s * alpha_s)) * np.sqrt((n + 1) / 2) * np.convolve(a=state[n + 1, :], v=E, mode="same")
     elif n == Nv - 1:
-        return (q_s / (m_s * alpha_s)) * -np.sqrt(n / 2) * np.convolve(a=state[n - 1, :], v=E, mode="same")
+        return (q_s / (m_s * alpha_s)) * (np.sqrt((n + 1) / 2) * np.convolve(a=closure, v=E, mode="same")
+                                          - np.sqrt(n / 2) * np.convolve(a=state[n - 1, :], v=E, mode="same"))
     else:
         return (q_s / (m_s * alpha_s)) * (np.sqrt((n + 1) / 2) * np.convolve(a=state[n + 1, :], v=E, mode="same")
                                           - np.sqrt(n / 2) * np.convolve(a=state[n - 1, :], v=E, mode="same"))
@@ -261,7 +261,7 @@ def linear_2_two_stream_SW(state_e1, state_e2, state_i, alpha_e1, alpha_e2, alph
     return q_e1 * term1 + q_e2 * term2 + q_i * term3
 
 
-def RHS(state, n, q_s, m_s, L, u_s, alpha_s, E, Nv, Nx):
+def RHS(state, n, q_s, m_s, L, u_s, alpha_s, E, Nv, Nx, closure):
     """
     :param state: state of all coefficients, dimensions = Nv x (2*Nx+1)
     :param n: the current state velocity index
@@ -275,15 +275,16 @@ def RHS(state, n, q_s, m_s, L, u_s, alpha_s, E, Nv, Nx):
     :param Nx: the number of Fourier spectral terms is 2*Nx+1
     :return: dC_{n}/dt
     """
-    term1, term2, term3 = linear(state=state, n=n, u_s=u_s, alpha_s=alpha_s, Nv=Nv)
+    term1, term2, term3 = linear(state=state, n=n, u_s=u_s, alpha_s=alpha_s, Nv=Nv, closure=closure)
     J = J_matrix(Nx=Nx, L=L)
-    return -J @ (term1 + term2 + term3) - nonlinear_SW(state=state, n=n, E=E, Nv=Nv, q_s=q_s, m_s=m_s, alpha_s=alpha_s)
+    return -J @ (term1 + term2 + term3) - nonlinear_SW(state=state, n=n, E=E, Nv=Nv, q_s=q_s, m_s=m_s, alpha_s=alpha_s,
+                                                       closure=closure)
 
 
 def solve_poisson_equation_two_stream(state_e1, state_e2, state_i, alpha_e1, alpha_e2, alpha_i, Nx, Nv, L,
-                                      solver="SWSR"):
+                                      solver="SW"):
     """
-    :param solver: "SW" or "SWSR"
+    :param solver: "SW" or "SWSR", default is "SW"
     :param L: spatial length
     :param Nv: number of velocity Hermite modes
     :param state_e1: a matrix of electron coefficients (species 1) at time t=t*
@@ -340,3 +341,86 @@ def solve_poisson_equation(state_e, state_i, alpha_e, alpha_i, Nx, Nv, L, solver
             else:
                 E[ii] = L / (2 * np.pi * kk * 1j) * rhs[ii]
     return E
+
+
+def mass(state, Nv, Nx):
+    """mass of the particular state
+
+    :param state: ndarray, electron or ion state
+    :param Nv: int, number of velocity Hermite spectral terms
+    :return: mass for the state
+    """
+    res = 0
+    for m in range(Nv):
+        res += integral_I0(n=m) * state[m, Nx]
+    return res
+
+
+def momentum(state, u_s, alpha_s, Nv, Nx):
+    """momentum of the particular state
+
+    :param state: ndarray, electron or ion state
+    :param Nv: int, number of velocity Hermite spectral terms
+    :param u_s: float, the velocity shifting parameter of species s
+    :param alpha_s: float, the velocity scaling parameter of species s
+    :return: momentum for the state
+    """
+    res = 0
+    for m in range(Nv):
+        res += integral_I1(n=m, u_s=u_s, alpha_s=alpha_s) * state[m, Nx]
+    return res
+
+
+def energy_k(state, u_s, alpha_s, Nv, Nx):
+    """kinetic energy of the particular state
+
+    :param state: ndarray, electron or ion state
+    :param Nv: int, number of velocity Hermite spectral terms
+    :param u_s: float, the velocity shifting parameter of species s
+    :param alpha_s: float, the velocity scaling parameter of species s
+    :return: kinetic energy for the state
+    """
+    res = 0
+    for m in range(Nv):
+        res += integral_I2(n=m, u_s=u_s, alpha_s=alpha_s) * state[m, Nx]
+    return res
+
+
+def total_mass(state, alpha_s, L, Nv, Nx):
+    """total mass of single electron and ion setup
+
+    :param state: ndarray, species s state
+    :param alpha_s: float, velocity scaling of species s
+    :param dx: float, spatial spacing
+    :param Nv: int, the number of velocity spectral terms
+    :return: total mass of single electron and ion setup
+    """
+    return mass(state=state, Nv=Nv, Nx=Nx).real * L * alpha_s
+
+
+def total_momentum(state, alpha_s, L, Nv, m_s, u_s, Nx):
+    """total momentum of single electron and ion setup
+
+    :param state: ndarray, species s state
+    :param alpha_s: float, velocity scaling of species s
+    :param L: float, spatial length
+    :param Nv: int, the number of velocity spectral terms
+    :param m_s: float, mass of species s
+    :param u_s: float, velocity shifting parameter of species s
+    :return: total momentum of single electron and ion setup
+    """
+    return momentum(state=state, Nv=Nv, alpha_s=alpha_s, u_s=u_s, Nx=Nx).real * L * alpha_s * m_s
+
+
+def total_energy_k(state, alpha_s, L, Nv, m_s, u_s, Nx):
+    """total kinetic energy of single electron and ion setup
+
+    :param state: ndarray, species s  state
+    :param alpha_s: float, velocity scaling of species s
+    :param L: float, spatial length
+    :param Nv: int, the number of velocity spectral terms
+    :param m_s: float, mass of species s
+    :param u_s: float, velocity shifting parameter of species s
+    :return: total kinetic energy of single electron and ion setup
+    """
+    return 0.5 * energy_k(state=state, Nv=Nv, alpha_s=alpha_s, u_s=u_s, Nx=Nx).real * L * alpha_s * m_s
