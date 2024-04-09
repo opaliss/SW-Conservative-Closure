@@ -82,7 +82,7 @@ if __name__ == '__main__':
     Nx = 20
     Nx_total = 2 * Nx + 1
     # number of Hermite spectral terms in v
-    Nv = 10
+    Nv = 11
     # Velocity scaling of electron and ion
     alpha_e1 = 1
     alpha_e2 = 1 / np.sqrt(2)
