@@ -1,7 +1,7 @@
 from operators.implicit_midpoint import implicit_midpoint_solver
 import numpy as np
 from operators.operators import RHS, solve_poisson_equation_two_stream, integral_I0, J_matrix_inv
-
+import scipy
 
 def dydt(y, t):
     dydt_ = np.zeros(len(y), dtype="complex128")
@@ -41,52 +41,51 @@ def dydt(y, t):
             np.flip(np.conjugate(dydt_[Nv * Nx_total + jj * Nx_total: Nv * Nx_total + (jj + 1) * Nx_total][Nx+1:]))
 
     # mass (odd)
-    dydt_[-1] = -L * np.sqrt(Nv / 2) * integral_I0(n=Nv - 1) * np.flip(np.conjugate(E)).T @ (
+    dydt_[-1] = -L * np.sqrt(Nv / 2) * integral_I0(n=Nv - 1) * np.flip(E).T @ (
             (q_e1 / m_e1) * closure_e1 + (q_e2 / m_e2) * closure_e2 + (q_i / m_i) * closure_i)
 
     # mass (even)
-    dydt_[-2] = -L * np.sqrt((Nv - 1) / 2) * integral_I0(n=Nv - 2) * np.flip(np.conjugate(E)).T @ (
+    dydt_[-2] = -L * np.sqrt((Nv - 1) / 2) * integral_I0(n=Nv - 2) * np.flip(E).T @ (
             (q_e1 / m_e1) * state_e1[-1, :] + (q_e2 / m_e2) * state_e2[-1, :] + (q_i / m_i) * state_i[-1, :])
 
     # momentum (odd)
-    dydt_[-3] = -L * integral_I0(n=Nv - 1) * np.flip(np.conjugate(E)).T @ (np.sqrt(Nv / 2) * (
+    dydt_[-3] = -L * integral_I0(n=Nv - 1) * np.flip(E).T @ (np.sqrt(Nv / 2) * (
             u_e1 * q_e1 * closure_e1 + u_e2 * q_e2 * closure_e2 + u_i * q_i * closure_i) +
             (Nv - 1) * (alpha_e1 * q_e1 * state_e1[-1, :] + alpha_e2 * q_e2 * state_e2[-1, :]
                         + alpha_i * q_i * state_i[-1, :]))
 
     # momentum (even)
-    # dydt_[-4] = -L * np.sqrt((Nv - 1) / 2) * integral_I0(n=Nv - 2) * np.flip(np.conjugate(E)).T @ (
-    #         u_e1 * q_e1 * state_e1[-1, :] + u_e2 * q_e2 * state_e2[-1, :] + u_i * q_i * state_i[-1, :] +
-    #         np.sqrt(2 * Nv) * (q_e1 * alpha_e1 * closure_e1 + q_e2 * alpha_e2 * closure_e2 + q_i * alpha_i * closure_i))
-    dydt_[-4] = -L * np.sqrt((Nv - 1) / 2) * integral_I0(n=Nv - 2) * np.flip(np.conjugate(E)).T @ (
-            u_e1 * q_e1 * state_e1[-1, :] + u_e2 * q_e2 * state_e2[-1, :] + u_i * q_i * state_i[-1, :])
+    dydt_[-4] = -L * np.sqrt((Nv - 1) / 2) * integral_I0(n=Nv - 2) * np.flip(E).T @ (
+            u_e1 * q_e1 * state_e1[-1, :] + u_e2 * q_e2 * state_e2[-1, :] + u_i * q_i * state_i[-1, :] +
+            np.sqrt(2 * Nv) * (q_e1 * alpha_e1 * closure_e1 + q_e2 * alpha_e2 * closure_e2 + q_i * alpha_i * closure_i))
 
     # energy (odd)
-    dydt_[-5] = -L * integral_I0(n=Nv - 1) * np.flip(np.conjugate(E)).T @ (np.sqrt(Nv / 2) * (
-            q_e1 * (0.5 * ((2 * Nv + 1) * (alpha_e1 ** 2) + u_e1 ** 2) * closure_e1 + q_e1/m_e1 * J_inv @ np.convolve(a=closure_e1, v=E, mode="same")) +
-            q_e2 * (0.5 * ((2 * Nv + 1) * (alpha_e2 ** 2) + u_e2 ** 2) * closure_e2 + q_e2/m_e2 * J_inv @ np.convolve(a=closure_e2, v=E, mode="same")) +
-            q_i * (0.5 * ((2 * Nv + 1) * (alpha_i ** 2) + u_i ** 2) * closure_i + q_i/m_i * J_inv @ np.convolve(a=closure_i, v=E, mode="same"))) +
+    dydt_[-5] = -L * integral_I0(n=Nv - 1) * np.flip(E).T @ (np.sqrt(Nv / 2) * (
+            q_e1 * (0.5 * ((2 * Nv + 1) * (alpha_e1 ** 2) + u_e1 ** 2) * closure_e1 + q_e1/m_e1 * J_inv @ scipy.signal.convolve(in1=closure_e1, in2=E, mode="same")) +
+            q_e2 * (0.5 * ((2 * Nv + 1) * (alpha_e2 ** 2) + u_e2 ** 2) * closure_e2 + q_e2/m_e2 * J_inv @ scipy.signal.convolve(in1=closure_e2, in2=E, mode="same")) +
+            q_i * (0.5 * ((2 * Nv + 1) * (alpha_i ** 2) + u_i ** 2) * closure_i + q_i/m_i * J_inv @ scipy.signal.convolve(in1=closure_i, in2=E, mode="same"))) +
             + (Nv - 1) * (u_e1 * q_e1 * state_e1[-1, :] + u_e2 * q_e2 * state_e2[-1, :] + u_i * q_i * state_i[-1, :]))
 
     # energy (even)
-    dydt_[-6] = -L * integral_I0(n=Nv - 2) * np.flip(np.conjugate(E)).T @ (np.sqrt((Nv - 1) / 2) * (
-            q_e1 * (0.5 * ((2 * Nv - 1) * (alpha_e1 ** 2) + u_e1 ** 2) * state_e1[-1, :] + q_e1/m_e1 * J_inv @ np.convolve(a=state_e1[-1, :], v=E, mode="same"))
-            + q_e2 * (0.5 * ((2 * Nv - 1) * (alpha_e2 ** 2) + u_e2 ** 2) * state_e2[-1, :] + q_e2/m_e2 * J_inv @ np.convolve(a=state_e2[-1, :], v=E, mode="same"))
-            + q_i * (0.5 * ((2 * Nv - 1) * (alpha_i ** 2) + u_i ** 2) * state_i[-1, :] + q_i/m_i * J_inv @ np.convolve(a=state_i[-1, :], v=E, mode="same")))
+    dydt_[-6] = -L * integral_I0(n=Nv - 2) * np.flip(E).T @ (np.sqrt((Nv - 1) / 2) * (
+            q_e1 * (0.5 * ((2 * Nv - 1) * (alpha_e1 ** 2) + u_e1 ** 2) * state_e1[-1, :] + q_e1/m_e1 * J_inv @ scipy.signal.convolve(in1=state_e1[-1, :], in2=E, mode="same"))
+            + q_e2 * (0.5 * ((2 * Nv - 1) * (alpha_e2 ** 2) + u_e2 ** 2) * state_e2[-1, :] + q_e2/m_e2 * J_inv @ scipy.signal.convolve(in1=state_e2[-1, :], in2=E, mode="same"))
+            + q_i * (0.5 * ((2 * Nv - 1) * (alpha_i ** 2) + u_i ** 2) * state_i[-1, :] + q_i/m_i * J_inv @ scipy.signal.convolve(in1=state_i[-1, :], in2=E, mode="same")))
             + np.sqrt(Nv * (Nv - 1)) * (u_e1 * q_e1 * closure_e1 + u_e2 * q_e2 * closure_e2 + u_i * q_i * closure_i))
+
     return dydt_
 
 
 if __name__ == '__main__':
     # set up configuration parameters
     # number of Fourier spectral terms in x
-    Nx = 50
+    Nx = 20
     Nx_total = 2 * Nx + 1
     # number of Hermite spectral terms in v
-    Nv = 50
+    Nv = 10
     # Velocity scaling of electron and ion
     alpha_e1 = 1
-    alpha_e2 = 1 / 2
+    alpha_e2 = 1 / np.sqrt(2)
     alpha_i = np.sqrt(1 / 1836)
     # perturbation magnitude
     epsilon = 0.03
@@ -149,7 +148,7 @@ if __name__ == '__main__':
 
     # set up implicit midpoint
     sol_midpoint_u = implicit_midpoint_solver(t_vec=t_vec, y0=y0, rhs=dydt, nonlinear_solver_type="newton_krylov",
-                                              r_tol=1e-8, a_tol=1e-14, max_iter=100)
+                                              r_tol=1e-10, a_tol=1e-14, max_iter=100)
 
     # save results
     np.save("data/SW/bump_on_tail/poisson/sol_midpoint_u_" + str(Nv), sol_midpoint_u)

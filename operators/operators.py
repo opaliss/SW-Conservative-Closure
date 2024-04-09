@@ -100,7 +100,7 @@ def J_matrix(Nx, L):
     """
     J = np.zeros(((2 * Nx + 1), (2 * Nx + 1)), dtype="complex128")
     for ii, kk in enumerate(range(-Nx, Nx + 1)):
-        J[ii, ii] = 2 * np.pi * 1j * kk / L
+        J[ii, ii] = (2 * np.pi * 1j * kk) / L
     return J
 
 
@@ -162,13 +162,16 @@ def nonlinear_SW(state, n, E, Nv, q_s, m_s, alpha_s, closure):
     :return: N(x, t=t*) for C^{s}_{n}
     """
     if n == 0:
-        return (q_s / (m_s * alpha_s)) * np.sqrt((n + 1) / 2) * np.convolve(a=state[n + 1, :], v=E, mode="same")
+        return (q_s / (m_s * alpha_s)) * np.sqrt((n + 1) / 2) * scipy.signal.convolve(in1=state[n + 1, :], in2=E,
+                                                                                      mode="same")
     elif n == Nv - 1:
-        return (q_s / (m_s * alpha_s)) * (np.sqrt((n + 1) / 2) * np.convolve(a=closure, v=E, mode="same")
-                                          - np.sqrt(n / 2) * np.convolve(a=state[n - 1, :], v=E, mode="same"))
+        return (q_s / (m_s * alpha_s)) * (np.sqrt((n + 1) / 2) * scipy.signal.convolve(in1=closure, in2=E, mode="same")
+                                          - np.sqrt(n / 2) * scipy.signal.convolve(in1=state[n - 1, :], in2=E, mode="same"))
     else:
-        return (q_s / (m_s * alpha_s)) * (np.sqrt((n + 1) / 2) * np.convolve(a=state[n + 1, :], v=E, mode="same")
-                                          - np.sqrt(n / 2) * np.convolve(a=state[n - 1, :], v=E, mode="same"))
+        return (q_s / (m_s * alpha_s)) * (np.sqrt((n + 1) / 2) * scipy.signal.convolve(in1=state[n + 1, :],
+                                                                                       in2=E, mode="same")
+                                          - np.sqrt(n / 2) * scipy.signal.convolve(in1=state[n - 1, :],
+                                                                                   in2=E, mode="same"))
 
 
 def linear_2_SW(state_e, state_i, alpha_e, alpha_i, Nx, Nv, q_e=-1, q_i=1):
@@ -249,10 +252,9 @@ def solve_poisson_equation_two_stream(state_e1, state_e2, state_i, alpha_e1, alp
     :param Nx: number of spectral terms in space (2*Nx+1) in total
     :return: E(x, t=t*)
     """
-    rhs = linear_2_two_stream_SW(state_e1=state_e1, state_e2=state_e2, state_i=state_i, alpha_e1=alpha_e1,
-                                     alpha_e2=alpha_e2, alpha_i=alpha_i, Nx=Nx, Nv=Nv)
-
-    #J_matrix_inv(Nx=Nx, L=L) @ rhs
+    rhs = linear_2_two_stream_SW(state_e1=state_e1, state_e2=state_e2, state_i=state_i,
+                                 alpha_e1=alpha_e1, alpha_e2=alpha_e2, alpha_i=alpha_i,
+                                 Nx=Nx, Nv=Nv)
 
     E = np.zeros(2*Nx+1, dtype="complex128")
 
@@ -261,9 +263,8 @@ def solve_poisson_equation_two_stream(state_e1, state_e2, state_i, alpha_e1, alp
             if kk > 0:
                 E[ii] = np.conjugate(E[Nx - kk])
             else:
-                E[ii] = L / (2 * np.pi * kk * 1j) * rhs[ii]
-
-    return J_matrix_inv(Nx=Nx, L=L) @ rhs
+                E[ii] = (L / (2 * np.pi * kk * 1j)) * rhs[ii]
+    return E
 
 
 def solve_poisson_equation(state_e, state_i, alpha_e, alpha_i, Nx, Nv, L):
@@ -341,7 +342,7 @@ def total_mass(state, alpha_s, L, Nv, Nx):
     :param Nv: int, the number of velocity spectral terms
     :return: total mass of single electron and ion setup
     """
-    return mass(state=state, Nv=Nv, Nx=Nx).real * L * alpha_s
+    return mass(state=state, Nv=Nv, Nx=Nx) * L * alpha_s
 
 
 def total_momentum(state, alpha_s, L, Nv, m_s, u_s, Nx):
@@ -355,7 +356,7 @@ def total_momentum(state, alpha_s, L, Nv, m_s, u_s, Nx):
     :param u_s: float, velocity shifting parameter of species s
     :return: total momentum of single electron and ion setup
     """
-    return momentum(state=state, Nv=Nv, alpha_s=alpha_s, u_s=u_s, Nx=Nx).real * L * alpha_s * m_s
+    return momentum(state=state, Nv=Nv, alpha_s=alpha_s, u_s=u_s, Nx=Nx) * L * alpha_s * m_s
 
 
 def total_energy_k(state, alpha_s, L, Nv, m_s, u_s, Nx):
@@ -369,4 +370,4 @@ def total_energy_k(state, alpha_s, L, Nv, m_s, u_s, Nx):
     :param u_s: float, velocity shifting parameter of species s
     :return: total kinetic energy of single electron and ion setup
     """
-    return 0.5 * energy_k(state=state, Nv=Nv, alpha_s=alpha_s, u_s=u_s, Nx=Nx).real * L * alpha_s * m_s
+    return 0.5 * energy_k(state=state, Nv=Nv, alpha_s=alpha_s, u_s=u_s, Nx=Nx) * L * alpha_s * m_s
