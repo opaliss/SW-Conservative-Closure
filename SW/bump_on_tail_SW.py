@@ -19,20 +19,15 @@ def dydt(y, t):
                                           alpha_e1=alpha_e1, alpha_e2=alpha_e2, alpha_i=alpha_i,
                                           Nx=Nx, L=L, Nv=Nv)
 
-    # # enforce that flip(E) \perp state_s[-1, :]
-    state_e1[-1, :] = state_e1[-1, :] - np.dot(np.flip(E), state_e1[-1, :]) / np.dot(np.flip(E), np.flip(E)) * np.flip(E)
-    state_e2[-1, :] = state_e2[-1, :] - np.dot(np.flip(E), state_e2[-1, :]) / np.dot(np.flip(E), np.flip(E)) * np.flip(E)
-    state_i[-1, :] = state_i[-1, :] - np.dot(np.flip(E), state_i[-1, :]) / np.dot(np.flip(E), np.flip(E)) * np.flip(E)
-
     # energy closure
-    # closure_e1 = closure_energy(state=state_e1, alpha_s=alpha_e1, u_s=u_e1, Nv=Nv, E=E, J_inv=J_inv, q_s=q_e1, m_s=m_e1, Nx_total=Nx_total)
-    # closure_e2 = closure_energy(state=state_e2, alpha_s=alpha_e2, u_s=u_e2, Nv=Nv, E=E, J_inv=J_inv, q_s=q_e2, m_s=m_e2, Nx_total=Nx_total)
-    # closure_i = closure_energy(state=state_i, alpha_s=alpha_i, u_s=u_i, Nv=Nv, E=E, J_inv=J_inv, q_s=q_i, m_s=m_i, Nx_total=Nx_total)
+    closure_e1 = closure_energy(state=state_e1, alpha_s=alpha_e1, u_s=u_e1, Nv=Nv, E=E, J_inv=J_inv, q_s=q_e1, m_s=m_e1, Nx_total=Nx_total)
+    closure_e2 = closure_energy(state=state_e2, alpha_s=alpha_e2, u_s=u_e2, Nv=Nv, E=E, J_inv=J_inv, q_s=q_e2, m_s=m_e2, Nx_total=Nx_total)
+    closure_i = closure_energy(state=state_i, alpha_s=alpha_i, u_s=u_i, Nv=Nv, E=E, J_inv=J_inv, q_s=q_i, m_s=m_i, Nx_total=Nx_total)
 
-    # momentum closure
-    closure_e1 = closure_momentum(state=state_e1, alpha_s=alpha_e1, u_s=u_e1, Nv=Nv)
-    closure_e2 = closure_momentum(state=state_e2, alpha_s=alpha_e2, u_s=u_e2, Nv=Nv)
-    closure_i = closure_momentum(state=state_i, alpha_s=alpha_i, u_s=u_i, Nv=Nv)
+    # # momentum closure
+    # closure_e1 =0*closure_momentum(state=state_e1, alpha_s=alpha_e1, u_s=u_e1, Nv=Nv)
+    # closure_e2 =0* closure_momentum(state=state_e2, alpha_s=alpha_e2, u_s=u_e2, Nv=Nv)
+    # closure_i = 0*closure_momentum(state=state_i, alpha_s=alpha_i, u_s=u_i, Nv=Nv)
 
     for jj in range(Nv):
         # electron 1 evolution
@@ -96,7 +91,7 @@ if __name__ == '__main__':
     Nx = 20
     Nx_total = 2 * Nx + 1
     # number of Hermite spectral terms in v
-    Nv = 150
+    Nv = 10
     # Velocity scaling of electron and ion
     alpha_e1 = 1
     alpha_e2 = 1 / np.sqrt(2)
@@ -165,5 +160,5 @@ if __name__ == '__main__':
                                               r_tol=1e-10, a_tol=1e-14, max_iter=100)
 
     # save results
-    np.save("data/SW/bump_on_tail/poisson/sol_midpoint_u_" + str(Nv) + "_momentum_closure_perp", sol_midpoint_u)
-    np.save("data/SW/bump_on_tail/poisson/sol_midpoint_t_" + str(Nv) + "_momentum_closure_perp", t_vec)
+    np.save("data/SW/bump_on_tail/poisson/sol_midpoint_u_" + str(Nv) + "_energy_closure", sol_midpoint_u)
+    np.save("data/SW/bump_on_tail/poisson/sol_midpoint_t_" + str(Nv) + "_energy_closure", t_vec)
