@@ -47,8 +47,8 @@ def closure_energy(state, Nv, u_s, alpha_s, J_inv, E, q_s, m_s, Nx_total):
     if Nv % 2 == 0:
         if u_s != 0:
             gamma = 0.5 * ((2*Nv - 1) * (alpha_s**2) + u_s**2)
-            matrix = np.sqrt((Nv-1)/2) * (gamma * np.identity(Nx_total) + q_s/m_s * J_inv @ E_conv)
-            return - matrix / (np.sqrt(Nv*(Nv-1)) * u_s * alpha_s) @ state[-1, :]
+            matrix = gamma * np.identity(Nx_total) + q_s/m_s * J_inv @ E_conv
+            return - matrix / (np.sqrt(2 * Nv) * u_s * alpha_s) @ state[-1, :]
         else:
             return 0 * state[-1, :]
 
@@ -56,4 +56,4 @@ def closure_energy(state, Nv, u_s, alpha_s, J_inv, E, q_s, m_s, Nx_total):
     elif Nv % 2 == 1:
         eta = 0.5 * ((2*Nv + 1) * (alpha_s**2) + u_s**2)
         matrix_inv = np.linalg.inv(eta * np.identity(Nx_total) + q_s/m_s * J_inv @ E_conv)
-        return - ((u_s * alpha_s * Nv) / (np.sqrt(Nv / 2))) * matrix_inv @ state[-1, :]
+        return - u_s * alpha_s * np.sqrt(2 * Nv) * matrix_inv @ state[-1, :]
