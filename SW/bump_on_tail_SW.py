@@ -26,16 +26,23 @@ def dydt(y, t):
 
     E = solve_poisson_equation_two_stream(state_e1=state_e1, state_e2=state_e2, state_i=state_i,
                                           alpha_e1=alpha_e1, alpha_e2=alpha_e2, alpha_i=alpha_i, Nx=Nx, L=L, Nv=Nv)
+    if closure == "energy":
+        # energy closure
+        closure_e1 = closure_energy(state=state_e1, alpha_s=alpha_e1, u_s=u_e1, Nv=Nv, E=E, J_inv=J_inv, q_s=q_e1, m_s=m_e1, Nx_total=Nx_total)
+        closure_e2 = closure_energy(state=state_e2, alpha_s=alpha_e2, u_s=u_e2, Nv=Nv, E=E, J_inv=J_inv, q_s=q_e2, m_s=m_e2,  Nx_total=Nx_total)
+        closure_i = closure_energy(state=state_i, alpha_s=alpha_i, u_s=u_i, Nv=Nv, E=E, J_inv=J_inv, q_s=q_i, m_s=m_i, Nx_total=Nx_total)
 
-    # energy closure
-    closure_e1 = closure_energy(state=state_e1, alpha_s=alpha_e1, u_s=u_e1, Nv=Nv, E=E, J_inv=J_inv, q_s=q_e1, m_s=m_e1, Nx_total=Nx_total)
-    closure_e2 = closure_energy(state=state_e2, alpha_s=alpha_e2, u_s=u_e2, Nv=Nv, E=E, J_inv=J_inv, q_s=q_e2, m_s=m_e2,  Nx_total=Nx_total)
-    closure_i = closure_energy(state=state_i, alpha_s=alpha_i, u_s=u_i, Nv=Nv, E=E, J_inv=J_inv, q_s=q_i, m_s=m_i, Nx_total=Nx_total)
+    if closure == "momentum":
+        # momentum closure
+        closure_e1 = closure_momentum(state=state_e1, alpha_s=alpha_e1, u_s=u_e1, Nv=Nv)
+        closure_e2 = closure_momentum(state=state_e2, alpha_s=alpha_e2, u_s=u_e2, Nv=Nv)
+        closure_i = closure_momentum(state=state_i, alpha_s=alpha_i, u_s=u_i, Nv=Nv)
 
-    # # momentum closure
-    # closure_e1 =0*closure_momentum(state=state_e1, alpha_s=alpha_e1, u_s=u_e1, Nv=Nv)
-    # closure_e2 =0* closure_momentum(state=state_e2, alpha_s=alpha_e2, u_s=u_e2, Nv=Nv)
-    # closure_i = 0*closure_momentum(state=state_i, alpha_s=alpha_i, u_s=u_i, Nv=Nv)
+    elif closure == "mass":
+        # momentum closure
+        closure_e1 = 0 * closure_momentum(state=state_e1, alpha_s=alpha_e1, u_s=u_e1, Nv=Nv)
+        closure_e2 = 0 * closure_momentum(state=state_e2, alpha_s=alpha_e2, u_s=u_e2, Nv=Nv)
+        closure_i = 0 * closure_momentum(state=state_i, alpha_s=alpha_i, u_s=u_i, Nv=Nv)
 
     for jj in range(Nv):
         # electron 1 evolution
@@ -105,20 +112,20 @@ def dydt(y, t):
 if __name__ == '__main__':
     # set up configuration parameters
     # number of Fourier spectral terms in x
-    Nx = 20
+    Nx = 25
     Nx_total = 2 * Nx + 1
     # number of Hermite spectral terms in v
-    Nv = 20
+    Nv = 50
     # Velocity scaling of electron and ion
     alpha_e1 = 1
-    alpha_e2 = 1 / np.sqrt(2)
+    alpha_e2 = np.sqrt(1 / 2)
     alpha_i = np.sqrt(1 / 1836)
     # perturbation magnitude
     epsilon = 0.03
     # x grid is from 0 to L
     L = 20 * np.pi / 3
     # final time
-    T = 50
+    T = 30
     # time stepping
     dt = 0.01
     # time vector
@@ -126,7 +133,7 @@ if __name__ == '__main__':
     # velocity scaling
     u_e1 = -1
     u_e2 = 4.5
-    u_i = 0
+    u_i = -1
     # mass normalized
     m_e1 = 1
     m_e2 = 1
@@ -136,8 +143,10 @@ if __name__ == '__main__':
     q_e2 = -1
     q_i = 1
     # scaling of bulk and bump
-    delta_e1 = 6 / 10
-    delta_e2 = 4 / 10
+    delta_e1 = 8 / 10
+    delta_e2 = 2 / 10
+    # closure type
+    closure = "energy"
 
     # inverse J
     J_inv = J_matrix_inv(Nx=Nx, L=L)
@@ -159,23 +168,22 @@ if __name__ == '__main__':
     # initialize states (electrons and ions)
     states_e1 = np.zeros((Nv, Nx_total), dtype="complex128")
     states_e2 = np.zeros((Nv, Nx_total), dtype="complex128")
-    state_i = np.zeros((Nv, Nx_total), dtype="complex128")
-
-    # background ions
-    state_i[0, Nx] = (1 / (np.sqrt(2 * np.sqrt(np.pi)))) / alpha_i
+    states_i = np.zeros((Nv, Nx_total), dtype="complex128")
 
     # initialize the expansion coefficients
     states_e1[0, :] = C_0e1
     states_e2[0, :] = C_0e2
+    states_i[0, Nx] = (1 / (np.sqrt(2 * np.sqrt(np.pi)))) / alpha_i
 
     # initial condition of the semi-discretized ODE
     y0 = np.append(states_e1.flatten("C"), states_e2.flatten("C"))
+    y0 = np.append(y0, states_i.flatten("C"))
     y0 = np.append(y0, np.zeros(6))
 
     # set up implicit midpoint
     sol_midpoint_u = implicit_midpoint_solver(t_vec=t_vec, y0=y0, rhs=dydt, nonlinear_solver_type="newton_krylov",
-                                              r_tol=1e-12, a_tol=1e-12, max_iter=100)
+                                              r_tol=1e-10, a_tol=1e-14, max_iter=100)
 
     # save results
-    np.save("../data/SW/bump_on_tail/sol_midpoint_u_" + str(Nv) + "_energy_closure", sol_midpoint_u)
-    np.save("../data/SW/bump_on_tail/sol_midpoint_t_" + str(Nv) + "_energy_closure", t_vec)
+    np.save("../data/SW/bump_on_tail/sol_midpoint_u_" + str(Nv) + "_" + str(closure) + "_closure", sol_midpoint_u)
+    np.save("../data/SW/bump_on_tail/sol_midpoint_t_" + str(Nv) + "_" + str(closure) + "_closure", t_vec)

@@ -25,13 +25,18 @@ def dydt(y, t):
 
     E = solve_poisson_equation(state_e=state_e, state_i=state_i, alpha_e=alpha_e, alpha_i=alpha_i, Nx=Nx, L=L, Nv=Nv)
 
-    # energy closure
-    closure_e = closure_energy(state=state_e, alpha_s=alpha_e, u_s=u_e, Nv=Nv, E=E, J_inv=J_inv, q_s=q_e, m_s=m_e, Nx_total=Nx_total)
-    closure_i = closure_energy(state=state_i, alpha_s=alpha_i, u_s=u_i, Nv=Nv, E=E, J_inv=J_inv, q_s=q_i, m_s=m_i, Nx_total=Nx_total)
-
-    # # momentum closure
-    # closure_e =0*closure_momentum(state=state_e, alpha_s=alpha_e, u_s=u_e, Nv=Nv)
-    # closure_i = 0*closure_momentum(state=state_i, alpha_s=alpha_i, u_s=u_i, Nv=Nv)
+    if closure == "energy":
+        # energy closure
+        closure_e = closure_energy(state=state_e, alpha_s=alpha_e, u_s=u_e, Nv=Nv, E=E, J_inv=J_inv, q_s=q_e, m_s=m_e, Nx_total=Nx_total)
+        closure_i = closure_energy(state=state_i, alpha_s=alpha_i, u_s=u_i, Nv=Nv, E=E, J_inv=J_inv, q_s=q_i, m_s=m_i, Nx_total=Nx_total)
+    elif closure == "momentum":
+        # momentum closure
+        closure_e = closure_momentum(state=state_e, alpha_s=alpha_e, u_s=u_e, Nv=Nv)
+        closure_i = closure_momentum(state=state_i, alpha_s=alpha_i, u_s=u_i, Nv=Nv)
+    elif closure == "mass":
+        #  mass closure
+        closure_e = 0 * closure_momentum(state=state_e, alpha_s=alpha_e, u_s=u_e, Nv=Nv)
+        closure_i = 0 * closure_momentum(state=state_i, alpha_s=alpha_i, u_s=u_i, Nv=Nv)
 
     for jj in range(Nv):
         # electron evolution
@@ -53,21 +58,17 @@ def dydt(y, t):
             np.flip(np.conjugate(dydt_[Nv * Nx_total + jj * Nx_total: Nv * Nx_total + (jj + 1) * Nx_total][Nx+1:]))
 
     # mass (odd)
-    dydt_[-1] = -L * np.sqrt(Nv / 2) * integral_I0(n=Nv - 1) * np.flip(E).T @ (
-            (q_e / m_e) * closure_e + (q_i / m_i) * closure_i)
+    dydt_[-1] = -L * np.sqrt(Nv / 2) * integral_I0(n=Nv - 1) * np.flip(E).T @ ((q_e / m_e) * closure_e + (q_i / m_i) * closure_i)
 
     # mass (even)
-    dydt_[-2] = -L * np.sqrt((Nv - 1) / 2) * integral_I0(n=Nv - 2) * np.flip(E).T @ (
-            (q_e / m_e) * state_e[-1, :] + (q_i / m_i) * state_i[-1, :])
+    dydt_[-2] = -L * np.sqrt((Nv - 1) / 2) * integral_I0(n=Nv - 2) * np.flip(E).T @ ((q_e / m_e) * state_e[-1, :] + (q_i / m_i) * state_i[-1, :])
 
     # momentum (odd)
-    dydt_[-3] = -L * integral_I0(n=Nv - 1) * np.flip(E).T @ (np.sqrt(Nv / 2) * (
-            u_e * q_e * closure_e + u_i * q_i * closure_i) +
+    dydt_[-3] = -L * integral_I0(n=Nv - 1) * np.flip(E).T @ (np.sqrt(Nv / 2) * ( u_e * q_e * closure_e + u_i * q_i * closure_i) +
             Nv * (alpha_e * q_e * state_e[-1, :] + alpha_i * q_i * state_i[-1, :]))
 
     # momentum (even)
-    dydt_[-4] = -L * np.sqrt((Nv - 1) / 2) * integral_I0(n=Nv - 2) * np.flip(E).T @ (
-         u_e * q_e * state_e[-1, :] + u_i * q_i * state_i[-1, :] +
+    dydt_[-4] = -L * np.sqrt((Nv - 1) / 2) * integral_I0(n=Nv - 2) * np.flip(E).T @ (u_e * q_e * state_e[-1, :] + u_i * q_i * state_i[-1, :] +
           np.sqrt(2 * Nv) * (q_e * alpha_e * closure_e + q_i * alpha_i * closure_i))
 
 
@@ -89,32 +90,34 @@ def dydt(y, t):
 if __name__ == '__main__':
     # set up configuration parameters
     # number of Fourier spectral terms in x
-    Nx = 20
+    Nx = 25
     Nx_total = 2 * Nx + 1
     # number of Hermite spectral terms in v
-    Nv = 10
+    Nv = 50
     # Velocity scaling of electron and ion
     alpha_e = 1
     alpha_i = np.sqrt(1 / 1836)
     # perturbation magnitude
-    epsilon = 0.03
+    epsilon = 0.01
     # x grid is from 0 to L
     L = 2 * np.pi
     # final time
-    T = 50
+    T = 10
     # time stepping
     dt = 0.01
     # time vector
     t_vec = np.linspace(0, T, int(T / dt) + 1)
     # velocity scaling
-    u_e = 0.01
-    u_i = 0.01
+    u_e = 1
+    u_i = 1
     # mass normalized
     m_e = 1
     m_i = 1836
     # charge normalized
     q_e = -1
     q_i = 1
+    # closure
+    closure = "energy"
 
     # inverse J
     J_inv = J_matrix_inv(Nx=Nx, L=L)
@@ -145,8 +148,8 @@ if __name__ == '__main__':
 
     # set up implicit midpoint
     sol_midpoint_u = implicit_midpoint_solver(t_vec=t_vec, y0=y0, rhs=dydt, nonlinear_solver_type="newton_krylov",
-                                              r_tol=1e-12, a_tol=1e-12, max_iter=100)
+                                              r_tol=1e-8, a_tol=1e-14, max_iter=100)
 
     # save results
-    np.save("../data/SW/weak_landau/sol_midpoint_u_" + str(Nv) + "_energy_closure", sol_midpoint_u)
-    np.save("../data/SW/weak_landau/sol_midpoint_t_" + str(Nv) + "_energy_closure", t_vec)
+    np.save("../data/SW/weak_landau/sol_midpoint_u_" + str(Nv) + "_" + str(closure) + "_closure", sol_midpoint_u)
+    np.save("../data/SW/weak_landau/sol_midpoint_t_" + str(Nv) + "_" + str(closure) + "_closure", t_vec)

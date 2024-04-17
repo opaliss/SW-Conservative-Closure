@@ -333,6 +333,13 @@ def energy_k(state, u_s, alpha_s, Nv, Nx):
     return res
 
 
+def L2(state, Nv):
+    res = 0
+    for m in range(Nv):
+        res += np.flip(state[m, :]).T @ state[m, :]
+    return res
+
+
 def total_mass(state, alpha_s, L, Nv, Nx):
     """total mass of single electron and ion setup
 
@@ -371,3 +378,15 @@ def total_energy_k(state, alpha_s, L, Nv, m_s, u_s, Nx):
     :return: total kinetic energy of single electron and ion setup
     """
     return 0.5 * energy_k(state=state, Nv=Nv, alpha_s=alpha_s, u_s=u_s, Nx=Nx) * L * alpha_s * m_s
+
+
+def total_L2_norm(state,  L, Nv, alpha_s):
+    """total kinetic energy of single electron and ion setup
+
+    :param state: ndarray, species s  state
+    :param alpha_s: float, velocity scaling of species s
+    :param L: float, spatial length
+    :param Nv: int, the number of velocity spectral terms
+    :return: total kinetic energy of single electron and ion setup
+    """
+    return L * alpha_s * L2(state=state, Nv=Nv)
