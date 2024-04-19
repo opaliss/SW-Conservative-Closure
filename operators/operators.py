@@ -256,6 +256,8 @@ def solve_poisson_equation_two_stream(state_e1, state_e2, state_i, alpha_e1, alp
                                  alpha_e1=alpha_e1, alpha_e2=alpha_e2, alpha_i=alpha_i,
                                  Nx=Nx, Nv=Nv)
 
+    #print("mean density", np.abs(rhs[Nx]))
+
     E = np.zeros(2*Nx+1, dtype="complex128")
 
     for ii, kk in enumerate(range(-Nx, Nx + 1)):

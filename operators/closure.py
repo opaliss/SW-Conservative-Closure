@@ -5,6 +5,36 @@ import numpy as np
 import scipy
 
 
+def closure_mass(state, E, Nx):
+    """
+
+    :param state:
+    :return:
+    """
+    closure = np.zeros((2*Nx + 1), dtype="complex128")
+    closure[:Nx + 1] = state[-1, :Nx + 1] - (state[-1, :Nx + 1].T @ np.flip(E[:Nx + 1])) / \
+                       (np.flip(E[:Nx + 1]).T @ np.flip(E[:Nx + 1])) * np.flip(E[:Nx + 1])
+    closure[:Nx] = np.flip(np.conjugate(closure[Nx+1:]))
+    return closure
+
+
+def closure_L2(state, J, E, Nx_total, q_s, alpha_s, m_s, Nx):
+    """
+
+    :param state:
+    :param J:
+    :param E:
+    :return:
+    """
+    # construct the Toeplitz matrix representing one-dimensional convolution
+    E_conv = scipy.linalg.convolution_matrix(a=E, n=Nx_total, mode='same')
+    vec = np.flip(state[-1, :]).T @ (J + (q_s / (m_s * (alpha_s**2))) * E_conv)
+    closure = np.zeros(Nx_total, dtype="complex128")
+    closure[:Nx + 1] = state[-1, :Nx+1] - (state[-1, :Nx + 1].T @ np.flip(vec[:Nx + 1]) / np.flip(vec[:Nx + 1]).T @  np.flip(vec[:Nx + 1])) * np.flip(vec[:Nx + 1])
+    closure[:Nx] = np.flip(np.conjugate(closure[Nx + 1:]))
+    return closure
+
+
 def closure_momentum(state, Nv, u_s, alpha_s):
     """
 

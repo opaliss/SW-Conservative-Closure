@@ -78,14 +78,18 @@ def implicit_midpoint_solver(t_vec, y0, rhs, nonlinear_solver_type="anderson", r
                                                  rtol=r_tol)
 
         elif nonlinear_solver_type == "newton_krylov":
-            y_sol[:, tt] = scipy.optimize.newton_krylov(F=lambda y: implicit_midpoint_formulation(y_new=y,
-                                                                                                  y_old=y_sol[:, tt - 1],
-                                                                                                  rhs=rhs,
-                                                                                                  dt=dt[tt - 1],
-                                                                                                  t_old=t_vec[tt - 1]),
-                                                        xin=y_sol[:, tt - 1],
-                                                        maxiter=max_iter,
-                                                        f_tol=a_tol,
-                                                        f_rtol=r_tol,
-                                                        verbose=True)
-    return y_sol
+            try:
+                y_sol[:, tt] = scipy.optimize.newton_krylov(F=lambda y: implicit_midpoint_formulation(y_new=y,
+                                                                                                      y_old=y_sol[:, tt - 1],
+                                                                                                      rhs=rhs,
+                                                                                                      dt=dt[tt - 1],
+                                                                                                      t_old=t_vec[tt - 1]),
+                                                            xin=y_sol[:, tt - 1],
+                                                            maxiter=max_iter,
+                                                            f_tol=a_tol,
+                                                            f_rtol=r_tol,
+                                                            verbose=True)
+            except:
+                return y_sol[:, :tt], t_vec[:tt]
+
+    return y_sol, t_vec
