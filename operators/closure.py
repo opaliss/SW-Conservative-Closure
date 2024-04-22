@@ -18,23 +18,6 @@ def closure_mass(state, E, Nx):
     return closure
 
 
-def closure_L2(state, J, E, Nx_total, q_s, alpha_s, m_s, Nx):
-    """
-
-    :param state:
-    :param J:
-    :param E:
-    :return:
-    """
-    # construct the Toeplitz matrix representing one-dimensional convolution
-    E_conv = scipy.linalg.convolution_matrix(a=E, n=Nx_total, mode='same')
-    vec = np.flip(state[-1, :]).T @ (J + (q_s / (m_s * (alpha_s**2))) * E_conv)
-    closure = np.zeros(Nx_total, dtype="complex128")
-    closure[:Nx + 1] = state[-1, :Nx+1] - (state[-1, :Nx + 1].T @ np.flip(vec[:Nx + 1]) / np.flip(vec[:Nx + 1]).T @  np.flip(vec[:Nx + 1])) * np.flip(vec[:Nx + 1])
-    closure[:Nx] = np.flip(np.conjugate(closure[Nx + 1:]))
-    return closure
-
-
 def closure_momentum(state, Nv, u_s, alpha_s):
     """
 
@@ -56,7 +39,7 @@ def closure_momentum(state, Nv, u_s, alpha_s):
             return 0 * state[-1, :]
 
 
-def closure_energy(state, Nv, u_s, alpha_s, J_inv, E, q_s, m_s, Nx_total):
+def closure_energy(state, Nv, u_s, alpha_s, J_inv, E, q_s, m_s, Nx_total, Nx):
     """
 
     :param state: state of species s
@@ -78,7 +61,11 @@ def closure_energy(state, Nv, u_s, alpha_s, J_inv, E, q_s, m_s, Nx_total):
         if u_s != 0:
             gamma = 0.5 * ((2*Nv - 1) * (alpha_s**2) + u_s**2)
             matrix = gamma * np.identity(Nx_total) + q_s/m_s * J_inv @ E_conv
-            return - matrix / (np.sqrt(2 * Nv) * u_s * alpha_s) @ state[-1, :]
+            closure = - matrix / (np.sqrt(2 * Nv) * u_s * alpha_s) @ state[-1, :]
+            # enforce real closures
+            closure[:Nx] = np.flip(np.conjugate(closure[Nx + 1:]))
+            closure[Nx] = closure[Nx].real
+            return closure
         else:
             return 0 * state[-1, :]
 
@@ -86,4 +73,8 @@ def closure_energy(state, Nv, u_s, alpha_s, J_inv, E, q_s, m_s, Nx_total):
     elif Nv % 2 == 1:
         eta = 0.5 * ((2*Nv + 1) * (alpha_s**2) + u_s**2)
         matrix_inv = np.linalg.inv(eta * np.identity(Nx_total) + q_s/m_s * J_inv @ E_conv)
-        return - u_s * alpha_s * np.sqrt(2 * Nv) * matrix_inv @ state[-1, :]
+        closure = - u_s * alpha_s * np.sqrt(2 * Nv) * matrix_inv @ state[-1, :]
+        # enforce real closures
+        closure[Nx] = closure[Nx].real
+        closure[:Nx] = np.flip(np.conjugate(closure[Nx + 1:]))
+        return closure

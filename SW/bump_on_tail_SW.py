@@ -13,7 +13,7 @@ from operators.implicit_midpoint import implicit_midpoint_solver
 import numpy as np
 from operators.operators import RHS, solve_poisson_equation_two_stream, integral_I0, J_matrix_inv, J_matrix
 import scipy
-from operators.closure import closure_momentum, closure_energy, closure_mass, closure_L2
+from operators.closure import closure_momentum, closure_energy, closure_mass
 
 
 def dydt(y, t):
@@ -32,9 +32,9 @@ def dydt(y, t):
                                           alpha_e1=alpha_e1, alpha_e2=alpha_e2, alpha_i=alpha_i, Nx=Nx, L=L, Nv=Nv)
     if closure == "energy":
         # energy closure
-        closure_e1 = closure_energy(state=state_e1, alpha_s=alpha_e1, u_s=u_e1, Nv=Nv, E=E, J_inv=J_inv, q_s=q_e1, m_s=m_e1, Nx_total=Nx_total)
-        closure_e2 = closure_energy(state=state_e2, alpha_s=alpha_e2, u_s=u_e2, Nv=Nv, E=E, J_inv=J_inv, q_s=q_e2, m_s=m_e2,  Nx_total=Nx_total)
-        closure_i = closure_energy(state=state_i, alpha_s=alpha_i, u_s=u_i, Nv=Nv, E=E, J_inv=J_inv, q_s=q_i, m_s=m_i, Nx_total=Nx_total)
+        closure_e1 = closure_energy(state=state_e1, alpha_s=alpha_e1, u_s=u_e1, Nv=Nv, E=E, J_inv=J_inv, q_s=q_e1, m_s=m_e1, Nx_total=Nx_total, Nx=Nx)
+        closure_e2 = closure_energy(state=state_e2, alpha_s=alpha_e2, u_s=u_e2, Nv=Nv, E=E, J_inv=J_inv, q_s=q_e2, m_s=m_e2,  Nx_total=Nx_total, Nx=Nx)
+        closure_i = closure_energy(state=state_i, alpha_s=alpha_i, u_s=u_i, Nv=Nv, E=E, J_inv=J_inv, q_s=q_i, m_s=m_i, Nx_total=Nx_total, Nx=Nx)
 
     if closure == "momentum":
         # momentum closure
@@ -54,11 +54,6 @@ def dydt(y, t):
         closure_e2 = np.zeros(Nx_total)
         closure_i = np.zeros(Nx_total)
 
-    elif closure == "L2":
-        closure_e1 = closure_L2(state=state_e1, J=J, E=E, Nx_total=Nx_total, q_s=q_e1, alpha_s=alpha_e1, m_s=m_e1, Nx=Nx)
-        closure_e2 = closure_L2(state=state_e2, J=J, E=E, Nx_total=Nx_total, q_s=q_e2, alpha_s=alpha_e2, m_s=m_e2, Nx=Nx)
-        closure_i = closure_L2(state=state_i, J=J, E=E, Nx_total=Nx_total, q_s=q_i, alpha_s=alpha_i, m_s=m_i, Nx=Nx)
-
     for jj in range(Nv):
         # electron 1 evolution
         dydt_[jj * Nx_total: (jj + 1) * Nx_total] = RHS(state=state_e1, n=jj, Nv=Nv, alpha_s=alpha_e1, q_s=q_e1,
@@ -67,6 +62,7 @@ def dydt(y, t):
         # enforce that the coefficients live in the reals
         dydt_[jj * Nx_total: (jj + 1) * Nx_total][:Nx] = np.flip(
             np.conjugate(dydt_[jj * Nx_total: (jj + 1) * Nx_total][Nx + 1:]))
+        dydt_[jj * Nx_total: (jj + 1) * Nx_total][Nx] = dydt_[jj * Nx_total: (jj + 1) * Nx_total][Nx].real
 
         # electron 2 evolution
         dydt_[Nv * Nx_total + jj * Nx_total: Nv * Nx_total + (jj + 1) * Nx_total] = RHS(state=state_e2, n=jj,
@@ -77,6 +73,7 @@ def dydt(y, t):
         # enforce that the coefficients live in the reals
         dydt_[Nv * Nx_total + jj * Nx_total: Nv * Nx_total + (jj + 1) * Nx_total][:Nx] = \
             np.flip(np.conjugate(dydt_[Nv * Nx_total + jj * Nx_total: Nv * Nx_total + (jj + 1) * Nx_total][Nx + 1:]))
+        dydt_[Nv * Nx_total + jj * Nx_total: Nv * Nx_total + (jj + 1) * Nx_total][Nx] = dydt_[Nv * Nx_total + jj * Nx_total: Nv * Nx_total + (jj + 1) * Nx_total][Nx].real
 
         # ion evolution
         dydt_[2 * Nv * Nx_total + jj * Nx_total: 2 * Nv * Nx_total + (jj + 1) * Nx_total] = RHS(state=state_i, n=jj,
@@ -88,6 +85,7 @@ def dydt(y, t):
         # enforce that the coefficients live in the reals
         dydt_[2 * Nv * Nx_total + jj * Nx_total: 2 * Nv * Nx_total + (jj + 1) * Nx_total][:Nx] = \
             np.flip(np.conjugate(dydt_[2 * Nv * Nx_total + jj * Nx_total: 2 * Nv * Nx_total + (jj + 1) * Nx_total][Nx + 1:]))
+        dydt_[2 * Nv * Nx_total + jj * Nx_total: 2 * Nv * Nx_total + (jj + 1) * Nx_total][Nx] = dydt_[2 * Nv * Nx_total + jj * Nx_total: 2 * Nv * Nx_total + (jj + 1) * Nx_total][Nx].real
 
     # mass (odd)
     dydt_[-1] = -L * np.sqrt(Nv / 2) * integral_I0(n=Nv - 1) * np.flip(E).T @ (
@@ -121,21 +119,21 @@ def dydt(y, t):
             + q_i * (0.5 * ((2 * Nv - 1) * (alpha_i ** 2) + u_i ** 2) * state_i[-1, :] + q_i / m_i * J_inv @ scipy.signal.convolve(in1=state_i[-1, :], in2=E, mode="same")))
             + np.sqrt(Nv * (Nv - 1)) * (u_e1 * q_e1 * alpha_e1 * closure_e1 + u_e2 * q_e2 * alpha_e2 * closure_e2 + u_i * q_i * alpha_i * closure_i))
 
-    # L2 norm
+    # L2 norm (even or odd)
     E_conv = scipy.linalg.convolution_matrix(a=E, n=Nx_total, mode='same')
-    dydt_[-7] = - 2 * np.sqrt(Nv / 2) * L * (np.flip(state_e1[-1, :]).T @ (alpha_e1 * J + q_e1/(m_e1*alpha_e1) * E_conv) @ closure_e1
-                    + np.flip(state_e2[-1, :]).T @ (alpha_e2 * J + q_e2/(m_e2*alpha_e2) * E_conv) @ closure_e2
-                    + np.flip(state_i[-1, :]).T @ (alpha_i * J + q_i/(m_i*alpha_i) * E_conv) @ closure_i)
+    dydt_[-7] = - np.sqrt(2 * Nv) * L * (np.flip(state_e1[-1, :]).T @ (q_e1/m_e1 * E_conv) @ closure_e1
+                    + np.flip(state_e2[-1, :]).T @ (q_e2/m_e2 * E_conv) @ closure_e2
+                    + np.flip(state_i[-1, :]).T @ (q_i/m_i * E_conv) @ closure_i)
     return dydt_
 
 
 if __name__ == '__main__':
     # set up configuration parameters
     # number of Fourier spectral terms in x
-    Nx = 25
+    Nx = 20
     Nx_total = 2 * Nx + 1
     # number of Hermite spectral terms in v
-    Nv = 5
+    Nv = 6
     # Velocity scaling of electron and ion
     alpha_e1 = 1
     alpha_e2 = np.sqrt(1 / 2)
@@ -145,7 +143,7 @@ if __name__ == '__main__':
     # x grid is from 0 to L
     L = 20 * np.pi / 3
     # final time
-    T = 20
+    T = 10
     # time stepping
     dt = 0.01
     # time vector
@@ -166,7 +164,7 @@ if __name__ == '__main__':
     delta_e1 = 9 / 10
     delta_e2 = 1 / 10
     # closure type
-    closure = "momentum"
+    closure = "L2"
 
     # inverse J
     J_inv = J_matrix_inv(Nx=Nx, L=L)
