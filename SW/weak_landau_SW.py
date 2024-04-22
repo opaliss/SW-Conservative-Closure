@@ -3,8 +3,11 @@ weak Landau module
 
 closure options: mass/by truncation, momentum, and energy!
 
-Last modified: April 16th, 2024 [Opal Issan]
+Last modified: April 22th, 2024 [Opal Issan]
 """
+import sys, os
+
+sys.path.append(os.path.abspath(os.path.join('..')))
 
 from operators.implicit_midpoint import implicit_midpoint_solver
 import numpy as np
