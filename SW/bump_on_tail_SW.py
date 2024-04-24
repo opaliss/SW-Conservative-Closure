@@ -3,7 +3,7 @@ Bump-on-tail instability module
 
 closure options:by truncation, mass, momentum, energy, and L2!
 
-Last modified: April 18th, 2024 [Opal Issan]
+Last modified: April 24th, 2024 [Opal Issan]
 """
 import sys, os
 
@@ -130,10 +130,10 @@ def dydt(y, t):
 if __name__ == '__main__':
     # set up configuration parameters
     # number of Fourier spectral terms in x
-    Nx = 20
+    Nx = 25
     Nx_total = 2 * Nx + 1
     # number of Hermite spectral terms in v
-    Nv = 6
+    Nv = 201
     # Velocity scaling of electron and ion
     alpha_e1 = 1
     alpha_e2 = np.sqrt(1 / 2)
@@ -143,7 +143,7 @@ if __name__ == '__main__':
     # x grid is from 0 to L
     L = 20 * np.pi / 3
     # final time
-    T = 10
+    T = 50
     # time stepping
     dt = 0.01
     # time vector
@@ -164,13 +164,11 @@ if __name__ == '__main__':
     delta_e1 = 9 / 10
     delta_e2 = 1 / 10
     # closure type
-    closure = "L2"
+    closure = "mass"
 
     # inverse J
     J_inv = J_matrix_inv(Nx=Nx, L=L)
     J = J_matrix(Nx=Nx, L=L)
-    # x direction
-    x_project = np.linspace(0, L, int(1e5))
 
     # initial condition of the first expansion coefficient
     C_0e1 = np.zeros(Nx_total, dtype="complex128")
