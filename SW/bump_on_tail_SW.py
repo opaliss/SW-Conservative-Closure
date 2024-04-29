@@ -133,7 +133,7 @@ if __name__ == '__main__':
     Nx = 25
     Nx_total = 2 * Nx + 1
     # number of Hermite spectral terms in v
-    Nv = 201
+    Nv = 25
     # Velocity scaling of electron and ion
     alpha_e1 = 1
     alpha_e2 = np.sqrt(1 / 2)
@@ -143,11 +143,12 @@ if __name__ == '__main__':
     # x grid is from 0 to L
     L = 20 * np.pi / 3
     # final time
-    T = 50
+    T0 = 0
+    Tf = 100
     # time stepping
     dt = 0.01
     # time vector
-    t_vec = np.linspace(0, T, int(T / dt) + 1)
+    t_vec = np.linspace(T0, Tf, int((Tf - T0) / dt) + 1)
     # velocity scaling
     u_e1 = -1/2
     u_e2 = 9/2
@@ -164,7 +165,7 @@ if __name__ == '__main__':
     delta_e1 = 9 / 10
     delta_e2 = 1 / 10
     # closure type
-    closure = "mass"
+    closure = "truncation"
 
     # inverse J
     J_inv = J_matrix_inv(Nx=Nx, L=L)
