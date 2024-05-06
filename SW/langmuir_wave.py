@@ -13,7 +13,7 @@ from operators.implicit_midpoint import implicit_midpoint_solver
 import numpy as np
 from operators.operators import RHS, solve_poisson_equation, integral_I0, J_matrix_inv
 import scipy
-from operators.closure import closure_momentum, closure_energy, closure_mass
+from operators.closure import closure_momentum, closure_energy
 
 
 def dydt(y, t):
@@ -37,11 +37,6 @@ def dydt(y, t):
         # momentum closure
         closure_e = closure_momentum(state=state_e, alpha_s=alpha_e, u_s=u_e, Nv=Nv)
         closure_i = closure_momentum(state=state_i, alpha_s=alpha_i, u_s=u_i, Nv=Nv)
-
-    elif closure == "mass":
-        #  mass closure
-        closure_e = closure_mass(state=state_e, E=E, Nx=Nx)
-        closure_i = closure_mass(state=state_i,  E=E, Nx=Nx)
 
     elif closure == "truncation":
         #  mass closure

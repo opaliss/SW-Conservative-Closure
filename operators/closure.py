@@ -5,19 +5,6 @@ import numpy as np
 import scipy
 
 
-def closure_mass(state, E, Nx):
-    """
-
-    :param state:
-    :return:
-    """
-    closure = np.zeros((2*Nx + 1), dtype="complex128")
-    closure[:Nx + 1] = state[-1, :Nx + 1] - (state[-1, :Nx + 1].T @ np.flip(E[:Nx + 1])) / \
-                       (np.flip(E[:Nx + 1]).T @ np.flip(E[:Nx + 1])) * np.flip(E[:Nx + 1])
-    closure[:Nx] = np.flip(np.conjugate(closure[Nx+1:]))
-    return closure
-
-
 def closure_momentum(state, Nv, u_s, alpha_s):
     """
 
@@ -59,8 +46,8 @@ def closure_energy(state, Nv, u_s, alpha_s, J_inv, E, q_s, m_s, Nx_total, Nx):
     # even Hermite modes
     if Nv % 2 == 0:
         if u_s != 0:
-            gamma = 0.5 * ((2*Nv - 1) * (alpha_s**2) + u_s**2)
-            matrix = gamma * np.identity(Nx_total) + q_s/m_s * J_inv @ E_conv
+            gamma = 0.5 * ((2 * Nv - 1) * (alpha_s ** 2) + u_s ** 2)
+            matrix = gamma * np.identity(Nx_total) + q_s / m_s * J_inv @ E_conv
             closure = - matrix / (np.sqrt(2 * Nv) * u_s * alpha_s) @ state[-1, :]
             # enforce real closures
             closure[:Nx] = np.flip(np.conjugate(closure[Nx + 1:]))
@@ -71,8 +58,8 @@ def closure_energy(state, Nv, u_s, alpha_s, J_inv, E, q_s, m_s, Nx_total, Nx):
 
     # odd Hermite modes
     elif Nv % 2 == 1:
-        eta = 0.5 * ((2*Nv + 1) * (alpha_s**2) + u_s**2)
-        matrix_inv = np.linalg.inv(eta * np.identity(Nx_total) + q_s/m_s * J_inv @ E_conv)
+        eta = 0.5 * ((2 * Nv + 1) * (alpha_s ** 2) + u_s ** 2)
+        matrix_inv = np.linalg.inv(eta * np.identity(Nx_total) + q_s / m_s * J_inv @ E_conv)
         closure = - u_s * alpha_s * np.sqrt(2 * Nv) * matrix_inv @ state[-1, :]
         # enforce real closures
         closure[Nx] = closure[Nx].real
