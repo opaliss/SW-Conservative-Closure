@@ -1,9 +1,9 @@
 """
 Langmuir wave module
 
-closure options: mass/by truncation, momentum, and energy!
+closure options: by truncation, momentum, and energy!
 
-Last modified: April 22th, 2024 [Opal Issan]
+Last modified: May 2nd, 2024 [Opal Issan]
 """
 import sys, os
 
@@ -108,7 +108,7 @@ if __name__ == '__main__':
     Nx = 50
     Nx_total = 2 * Nx + 1
     # number of Hermite spectral terms in v
-    Nv = 11
+    Nv = 1001
     # Velocity scaling of electron and ion
     alpha_e = 0.1
     alpha_i = np.sqrt(1 / 1836)
@@ -117,7 +117,7 @@ if __name__ == '__main__':
     # x grid is from 0 to L
     L = 2 * np.pi
     # final time
-    T = 100
+    T = 50
     # time stepping
     dt = 0.1
     # time vector
@@ -132,7 +132,7 @@ if __name__ == '__main__':
     q_e = -1
     q_i = 1
     # closure
-    closure = "energy"
+    closure = "truncation"
 
     # inverse J
     J_inv = J_matrix_inv(Nx=Nx, L=L)
