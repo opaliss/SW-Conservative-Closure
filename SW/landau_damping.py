@@ -105,26 +105,26 @@ def dydt(y, t):
 if __name__ == '__main__':
     # set up configuration parameters
     # number of Fourier spectral terms in x
-    Nx = 50
+    Nx = 100
     Nx_total = 2 * Nx + 1
     # number of Hermite spectral terms in v
-    Nv = 10
+    Nv = 100
     # Velocity scaling of electron and ion
-    alpha_e = 0.1
+    alpha_e = 2.1 / np.sqrt(2)
     alpha_i = np.sqrt(1 / 1836)
     # perturbation magnitude
     epsilon = 0.01
     # x grid is from 0 to L
     L = 2 * np.pi
     # final time
-    T = 100
+    T = 10
     # time stepping
     dt = 0.1
     # time vector
     t_vec = np.linspace(0, T, int(T / dt) + 1)
     # velocity scaling
-    u_e = 1
-    u_i = 1
+    u_e = 0
+    u_i = 0
     # mass normalized
     m_e = 1
     m_i = 1836
@@ -132,7 +132,7 @@ if __name__ == '__main__':
     q_e = -1
     q_i = 1
     # closure
-    closure = "energy"
+    closure = "truncation"
 
     # inverse J
     J_inv = J_matrix_inv(Nx=Nx, L=L)
@@ -164,8 +164,8 @@ if __name__ == '__main__':
     # set up implicit midpoint
     sol_midpoint_u, t_vec = implicit_midpoint_solver(t_vec=t_vec, y0=y0, rhs=dydt,
                                                      nonlinear_solver_type="newton_krylov",
-                                                     r_tol=1e-12, a_tol=1e-12, max_iter=100)
+                                                     r_tol=1e-8, a_tol=1e-8, max_iter=100)
 
     # save results
-    np.save("../data/SW/langmuir/sol_midpoint_u_" + str(Nv) + "_" + str(closure) + "_closure", sol_midpoint_u)
-    np.save("../data/SW/langmuir/sol_midpoint_t_" + str(Nv) + "_" + str(closure) + "_closure", t_vec)
+    np.save("../data/SW/landau/sol_midpoint_u_" + str(Nv) + "_" + str(closure) + "_closure", sol_midpoint_u)
+    np.save("../data/SW/landau/sol_midpoint_t_" + str(Nv) + "_" + str(closure) + "_closure", t_vec)
