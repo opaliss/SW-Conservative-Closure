@@ -351,7 +351,7 @@ def total_mass(state, alpha_s, L, Nv, Nx):
     :param Nv: int, the number of velocity spectral terms
     :return: total mass of single electron and ion setup
     """
-    return mass(state=state, Nv=Nv, Nx=Nx) * L * alpha_s
+    return mass(state=state, Nv=Nv, Nx=Nx).real * L * alpha_s
 
 
 def total_momentum(state, alpha_s, L, Nv, m_s, u_s, Nx):
@@ -365,7 +365,7 @@ def total_momentum(state, alpha_s, L, Nv, m_s, u_s, Nx):
     :param u_s: float, velocity shifting parameter of species s
     :return: total momentum of single electron and ion setup
     """
-    return momentum(state=state, Nv=Nv, alpha_s=alpha_s, u_s=u_s, Nx=Nx) * L * alpha_s * m_s
+    return momentum(state=state, Nv=Nv, alpha_s=alpha_s, u_s=u_s, Nx=Nx).real * L * alpha_s * m_s
 
 
 def total_energy_k(state, alpha_s, L, Nv, m_s, u_s, Nx):
@@ -379,7 +379,7 @@ def total_energy_k(state, alpha_s, L, Nv, m_s, u_s, Nx):
     :param u_s: float, velocity shifting parameter of species s
     :return: total kinetic energy of single electron and ion setup
     """
-    return 0.5 * energy_k(state=state, Nv=Nv, alpha_s=alpha_s, u_s=u_s, Nx=Nx) * L * alpha_s * m_s
+    return 0.5 * energy_k(state=state, Nv=Nv, alpha_s=alpha_s, u_s=u_s, Nx=Nx).real * L * alpha_s * m_s
 
 
 def total_L2_norm(state,  L, Nv, alpha_s):
@@ -391,4 +391,4 @@ def total_L2_norm(state,  L, Nv, alpha_s):
     :param Nv: int, the number of velocity spectral terms
     :return: total kinetic energy of single electron and ion setup
     """
-    return L * alpha_s * L2(state=state, Nv=Nv)
+    return L * alpha_s * L2(state=state, Nv=Nv).real

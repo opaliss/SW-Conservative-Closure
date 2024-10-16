@@ -21,9 +21,9 @@ def closure_momentum(state, Nv, u_s, alpha_s):
     # odd Hermite modes
     elif Nv % 2 == 1:
         if u_s != 0:
-            return - alpha_s * Nv * state[-1, :] / (u_s * np.sqrt(Nv / 2))
+            return -alpha_s * Nv * state[-1, :] / (u_s * np.sqrt(Nv / 2))
         else:
-            return 0 * state[-1, :]
+            return "We have a problem! I can not divide by zero :) "
 
 
 def closure_energy(state, Nv, u_s, alpha_s, J_inv, E, q_s, m_s, Nx_total, Nx):
